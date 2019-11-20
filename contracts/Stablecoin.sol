@@ -17,8 +17,6 @@ contract Stablecoin is ERC20, ERC20Detailed {
     mapping(uint256 => uint256) vaultCollateral;
     mapping(uint256 => uint256) vaultDebt;
 
-    mapping(address => uint256[]) ownerVaults;
-
     constructor(
         address ethPriceSource,
         address tokenPriceSource,
@@ -77,8 +75,6 @@ contract Stablecoin is ERC20, ERC20Detailed {
 
         vaultExistance[id] = true;
         vaultOwner[id] = msg.sender;
-
-        ownerVaults[msg.sender].push(id);
 
         return id;
     }
