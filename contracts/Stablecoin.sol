@@ -46,6 +46,28 @@ contract Stablecoin is ERC20, ERC20Detailed {
         return id;
     }
 
+    function destroyVault(uint256 vaultID) external {
+        require(vaultExistance[vaultID], "Vault does not exist");
+        require(vaultOwner[vaultID] == msg.sender, "Vault is not owned by you");
+        require(vaultDebt[vaultID] != 0, "Vault has outstanding debt");
+
+        if(vaultCollateral[vaultID] > 0) {
+            msg.sender.transfer(vaultCollateral[vaultID]);
+        }
+
+        delete vaultExistance[vaultID];
+        delete vaultOwner[vaultID];
+        delete vaultCollateral[vaultID];
+        delete vaultDebt[vaultID];
+    }
+
+    function transferVault(uint256 vaultID, address to) external {
+        require(vaultExistance[vaultID], "Vault does not exist");
+        require(vaultOwner[vaultID] == msg.sender, "Vault is not owned by you");
+
+        vaultOwner[vaultID] = to;
+    }
+
     function depositCollateral(uint256 vaultID) external payable {
         require(vaultExistance[vaultID], "Vault does not exist");
         require(vaultOwner[vaultID] == msg.sender, "Vault is not owned by you");
