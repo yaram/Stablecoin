@@ -7,6 +7,7 @@
     "build": "waffle"
   },
   "devDependencies": {
+    "@openzeppelin/contracts": "^2.4.0",
     "ethereum-waffle": "^2.1.0"
   }
 }
