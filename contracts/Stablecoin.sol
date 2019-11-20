@@ -132,4 +132,36 @@ contract Stablecoin is ERC20, ERC20Detailed {
         vaultDebt[vaultID] -= amount;
         _burn(msg.sender, amount);
     }
+
+    function buyRiskyVault(uint256 vaultID) external {
+        require(vaultExistance[vaultID], "Vault does not exist");
+
+        uint256 collateralPrice = vaultCollateral[vaultID] * _ethPriceSource.getPrice();
+
+        assert(collateralPrice > vaultCollateral[vaultID]);
+
+        uint256 debtPrice = vaultDebt[vaultID] * _tokenPriceSource.getPrice();
+
+        assert(debtPrice > vaultDebt[vaultID]);
+
+        uint256 collateralPriceTimes100 = collateralPrice * 100;
+
+        assert(collateralPriceTimes100 > collateralPrice);
+
+        uint256 collateralPercentage = collateralPriceTimes100 / debtPrice;
+
+        require(collateralPercentage < _minimumCollateralPercentage, "Vault is not below minimum collateral percentage");
+
+        uint256 maximumDebtPrice = collateralPriceTimes100 / _minimumCollateralPercentage;
+
+        uint256 maximumDebt = maximumDebtPrice / _tokenPriceSource.getPrice();
+
+        uint256 debtDifference = vaultDebt[vaultID] - maximumDebt;
+
+        require(balanceOf(msg.sender) >= debtDifference, "Token balance too low to pay off outstanding debt");
+
+        vaultOwner[vaultID] = msg.sender;
+        vaultDebt[vaultID] = maximumDebt;
+        _burn(msg.sender, debtDifference);
+    }
 }
