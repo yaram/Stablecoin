@@ -43,19 +43,19 @@ contract Stablecoin is ERC20, ERC20Detailed {
     }
 
     function isValidCollateral(uint256 collateral, uint256 debt) private view returns (bool) {
-        uint256 collateralPrice = collateral * _ethPriceSource.getPrice();
+        uint256 collateralValue = collateral * _ethPriceSource.getPrice();
 
-        assert(collateralPrice > collateral);
+        assert(collateralValue > collateral);
 
-        uint256 debtPrice = debt * _tokenPriceSource.getPrice();
+        uint256 debtValue = debt * _tokenPriceSource.getPrice();
 
-        assert(debtPrice > debt);
+        assert(debtValue > debt);
 
-        uint256 collateralPriceTimes100 = collateralPrice * 100;
+        uint256 collateralValueTimes100 = collateralValue * 100;
 
-        assert(collateralPriceTimes100 > collateralPrice);
+        assert(collateralValueTimes100 > collateralValue);
 
-        uint256 collateralPercentage = collateralPriceTimes100 / debtPrice;
+        uint256 collateralPercentage = collateralValueTimes100 / debtValue;
 
         return collateralPercentage >= _minimumCollateralPercentage;
     }
@@ -136,25 +136,25 @@ contract Stablecoin is ERC20, ERC20Detailed {
     function buyRiskyVault(uint256 vaultID) external {
         require(vaultExistance[vaultID], "Vault does not exist");
 
-        uint256 collateralPrice = vaultCollateral[vaultID] * _ethPriceSource.getPrice();
+        uint256 collateralValue = vaultCollateral[vaultID] * _ethPriceSource.getPrice();
 
-        assert(collateralPrice > vaultCollateral[vaultID]);
+        assert(collateralValue > vaultCollateral[vaultID]);
 
-        uint256 debtPrice = vaultDebt[vaultID] * _tokenPriceSource.getPrice();
+        uint256 debtValue = vaultDebt[vaultID] * _tokenPriceSource.getPrice();
 
-        assert(debtPrice > vaultDebt[vaultID]);
+        assert(debtValue > vaultDebt[vaultID]);
 
-        uint256 collateralPriceTimes100 = collateralPrice * 100;
+        uint256 collateralValueTimes100 = collateralValue * 100;
 
-        assert(collateralPriceTimes100 > collateralPrice);
+        assert(collateralValueTimes100 > collateralValue);
 
-        uint256 collateralPercentage = collateralPriceTimes100 / debtPrice;
+        uint256 collateralPercentage = collateralValueTimes100 / debtValue;
 
         require(collateralPercentage < _minimumCollateralPercentage, "Vault is not below minimum collateral percentage");
 
-        uint256 maximumDebtPrice = collateralPriceTimes100 / _minimumCollateralPercentage;
+        uint256 maximumDebtValue = collateralValueTimes100 / _minimumCollateralPercentage;
 
-        uint256 maximumDebt = maximumDebtPrice / _tokenPriceSource.getPrice();
+        uint256 maximumDebt = maximumDebtValue / _tokenPriceSource.getPrice();
 
         uint256 debtDifference = vaultDebt[vaultID] - maximumDebt;
 
