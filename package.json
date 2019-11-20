@@ -2,5 +2,11 @@
   "name": "stablecoin",
   "version": "0.1.0",
   "author": "Wayde Reitsma <waydereitsma@gmail.com> (https://waydereitsma.me/)",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "build": "waffle"
+  },
+  "devDependencies": {
+    "ethereum-waffle": "^2.1.0"
+  }
 }
