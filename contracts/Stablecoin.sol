@@ -38,6 +38,24 @@ contract Stablecoin is ERC20, ERC20Detailed {
         _;
     }
 
+    function isValidCollateral(uint256 collateral, uint256 debt) private view returns (bool) {
+        uint256 collateralPrice = collateral * _ethPriceSource.getPrice();
+
+        assert(collateralPrice > collateral);
+
+        uint256 debtPrice = debt * _tokenPriceSource.getPrice();
+
+        assert(debtPrice > debt);
+
+        uint256 collateralPriceTimes100 = collateralPrice * 100;
+
+        assert(collateralPriceTimes100 > collateralPrice);
+
+        uint256 collateralPercentage = collateralPriceTimes100 / debtPrice;
+
+        return collateralPercentage >= _minimumCollateralPercentage;
+    }
+
     function createVault() external returns (uint256) {
         uint256 id = _nextVaultID;
         _nextVaultID += 1;
@@ -83,13 +101,7 @@ contract Stablecoin is ERC20, ERC20Detailed {
         uint256 newCollateral = vaultCollateral[vaultID] - amount;
 
         if(vaultDebt[vaultID] != 0) {
-            uint256 newCollateralCent = newCollateral * 100;
-
-            assert(newCollateralCent > newCollateral);
-
-            uint256 newCollateralPercentage = newCollateralCent / vaultDebt[vaultID];
-
-            require(newCollateralPercentage < _minimumCollateralPercentage, "Withdrawal would put vault below minimum collateral percentage");
+            require(isValidCollateral(newCollateral, vaultDebt[vaultID]), "Withdrawal would put vault below minimum collateral percentage");
         }
 
         vaultCollateral[vaultID] = newCollateral;
@@ -103,13 +115,7 @@ contract Stablecoin is ERC20, ERC20Detailed {
 
         assert(newDebt > vaultDebt[vaultID]);
 
-        uint256 collateralCent = vaultCollateral[vaultID] * 100;
-
-        assert(collateralCent > vaultCollateral[vaultID]);
-
-        uint256 newCollateralPercentage = collateralCent / newDebt;
-
-        require(newCollateralPercentage < _minimumCollateralPercentage, "Borrow would put vault below minimum collateral percentage");
+        require(isValidCollateral(vaultCollateral[vaultID], newDebt), "Borrow would put vault below minimum collateral percentage");
 
         vaultDebt[vaultID] = newDebt;
         _mint(msg.sender, amount);
