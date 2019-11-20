@@ -42,7 +42,10 @@ contract Stablecoin is ERC20, ERC20Detailed {
         _;
     }
 
-    function isValidCollateral(uint256 collateral, uint256 debt) private view returns (bool) {
+    function calculateCollateralProperties(uint256 collateral, uint256 debt) private view returns (uint256, uint256) {
+        assert(_ethPriceSource.getPrice() != 0);
+        assert(_tokenPriceSource.getPrice() != 0);
+
         uint256 collateralValue = collateral * _ethPriceSource.getPrice();
 
         assert(collateralValue > collateral);
@@ -54,6 +57,12 @@ contract Stablecoin is ERC20, ERC20Detailed {
         uint256 collateralValueTimes100 = collateralValue * 100;
 
         assert(collateralValueTimes100 > collateralValue);
+
+        return (collateralValueTimes100, debtValue);
+    }
+
+    function isValidCollateral(uint256 collateral, uint256 debt) private view returns (bool) {
+        (uint256 collateralValueTimes100, uint256 debtValue) = calculateCollateralProperties(collateral, debt);
 
         uint256 collateralPercentage = collateralValueTimes100 / debtValue;
 
@@ -136,17 +145,7 @@ contract Stablecoin is ERC20, ERC20Detailed {
     function buyRiskyVault(uint256 vaultID) external {
         require(vaultExistance[vaultID], "Vault does not exist");
 
-        uint256 collateralValue = vaultCollateral[vaultID] * _ethPriceSource.getPrice();
-
-        assert(collateralValue > vaultCollateral[vaultID]);
-
-        uint256 debtValue = vaultDebt[vaultID] * _tokenPriceSource.getPrice();
-
-        assert(debtValue > vaultDebt[vaultID]);
-
-        uint256 collateralValueTimes100 = collateralValue * 100;
-
-        assert(collateralValueTimes100 > collateralValue);
+        (uint256 collateralValueTimes100, uint256 debtValue) = calculateCollateralProperties(vaultCollateral[vaultID], vaultDebt[vaultID]);
 
         uint256 collateralPercentage = collateralValueTimes100 / debtValue;
 
