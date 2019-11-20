@@ -32,6 +32,12 @@ contract Stablecoin is ERC20, ERC20Detailed {
         _minimumCollateralPercentage = minimumCollateralPercentage;
     }
 
+    modifier onlyVaultOwner(uint256 vaultID) {
+        require(vaultExistance[vaultID], "Vault does not exist");
+        require(vaultOwner[vaultID] == msg.sender, "Vault is not owned by you");
+        _;
+    }
+
     function createVault() external returns (uint256) {
         uint256 id = _nextVaultID;
         _nextVaultID += 1;
@@ -46,9 +52,7 @@ contract Stablecoin is ERC20, ERC20Detailed {
         return id;
     }
 
-    function destroyVault(uint256 vaultID) external {
-        require(vaultExistance[vaultID], "Vault does not exist");
-        require(vaultOwner[vaultID] == msg.sender, "Vault is not owned by you");
+    function destroyVault(uint256 vaultID) external onlyVaultOwner(vaultID) {
         require(vaultDebt[vaultID] != 0, "Vault has outstanding debt");
 
         if(vaultCollateral[vaultID] > 0) {
@@ -61,17 +65,11 @@ contract Stablecoin is ERC20, ERC20Detailed {
         delete vaultDebt[vaultID];
     }
 
-    function transferVault(uint256 vaultID, address to) external {
-        require(vaultExistance[vaultID], "Vault does not exist");
-        require(vaultOwner[vaultID] == msg.sender, "Vault is not owned by you");
-
+    function transferVault(uint256 vaultID, address to) external onlyVaultOwner(vaultID) {
         vaultOwner[vaultID] = to;
     }
 
-    function depositCollateral(uint256 vaultID) external payable {
-        require(vaultExistance[vaultID], "Vault does not exist");
-        require(vaultOwner[vaultID] == msg.sender, "Vault is not owned by you");
-
+    function depositCollateral(uint256 vaultID) external payable onlyVaultOwner(vaultID) {
         uint256 newCollateral = vaultCollateral[vaultID] + msg.value;
 
         assert(newCollateral > vaultCollateral[vaultID]);
@@ -79,9 +77,7 @@ contract Stablecoin is ERC20, ERC20Detailed {
         vaultCollateral[vaultID] = newCollateral;
     }
 
-    function withdrawCollateral(uint256 vaultID, uint256 amount) external {
-        require(vaultExistance[vaultID], "Vault does not exist");
-        require(vaultOwner[vaultID] == msg.sender, "Vault is not owned by you");
+    function withdrawCollateral(uint256 vaultID, uint256 amount) external onlyVaultOwner(vaultID) {
         require(vaultCollateral[vaultID] >= amount, "Vault does not have enough collateral");
 
         uint256 newCollateral = vaultCollateral[vaultID] - amount;
@@ -100,10 +96,8 @@ contract Stablecoin is ERC20, ERC20Detailed {
         msg.sender.transfer(amount);
     }
 
-    function borrowToken(uint256 vaultID, uint256 amount) external {
+    function borrowToken(uint256 vaultID, uint256 amount) external onlyVaultOwner(vaultID) {
         require(amount > 0, "Must borrow non-zero amount");
-        require(vaultExistance[vaultID], "Vault does not exist");
-        require(vaultOwner[vaultID] == msg.sender, "Vault is not owned by you");
 
         uint256 newDebt = vaultDebt[vaultID] + amount;
 
@@ -121,9 +115,7 @@ contract Stablecoin is ERC20, ERC20Detailed {
         _mint(msg.sender, amount);
     }
 
-    function payBackToken(uint256 vaultID, uint256 amount) external {
-        require(vaultExistance[vaultID], "Vault does not exist");
-        require(vaultOwner[vaultID] == msg.sender, "Vault is not owned by you");
+    function payBackToken(uint256 vaultID, uint256 amount) external onlyVaultOwner(vaultID) {
         require(balanceOf(msg.sender) >= amount, "Token balance too low");
         require(vaultDebt[vaultID] >= amount, "Vault debt less than amount to pay back");
 
