@@ -17,6 +17,7 @@
     "parcel-bundler": "^1.12.4"
   },
   "dependencies": {
-    "ethers": "^4.0.39"
+    "ethers": "^4.0.39",
+    "hyperapp": "^2.0.3"
   }
 }
