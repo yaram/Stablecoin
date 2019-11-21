@@ -1,93 +1,79 @@
-import { h, app } from 'hyperapp';
+import { h, diff, patch, create } from 'virtual-dom';
 import { ethers } from 'ethers';
 
-function retrieveAddress(dispatch, signer) {
-    signer.getAddress().then(address => dispatch(state => ({ ...state, address })));
-}
+async function connect(state) {
+    update({ ...state, message: null });
 
-function Connect(state) {
-    if(process.env.NODE_ENV === 'production') {
-        if(window.ethereum) {
-            return [
-                { ...state, message: null },
-                [
-                    dispatch => {
-                        window.ethereum.enable().then(addresses => {
-                            const provider = new ethers.providers.Web3Provider(window.ethereum);
+    try {
+        if(process.env.NODE_ENV === 'production') {
+            if(window.ethereum) {
+                    const addresses = await window.ethereum.enable();
 
-                            dispatch(state => ({
-                                ...state,
-                                provider,
-                                signer: provider.getSigner(),
-                                address: addresses[0]
-                            }));
-                        }).catch(() => dispatch(state => ({ ...state, message: 'Unable to connect to wallet'})))
-                    }
-                ]
-            ];
-        } else if(window.web3) {
-            const provider = new ethers.providers.Web3Provider(window.web3.currentProvider);
+                    const provider = new ethers.providers.Web3Provider(window.ethereum);
+
+                    update({
+                        ...state,
+                        provider,
+                        signer: provider.getSigner(),
+                        address: addresses[0]
+                    });
+            } else if(window.web3) {
+                const provider = new ethers.providers.Web3Provider(window.web3.currentProvider);
+                const signer = provider.getSigner();
+
+                const address = await signer.getAddress();
+
+                update({ ...state, provider, signer, address });
+            } else {
+                return {
+                    ...state,
+                    message: 'No wallet present'
+                };
+            }
+        } else {
+            const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
             const signer = provider.getSigner();
 
-            return [
-                {
-                    ...state,
-                    message: null,
-                    provider,
-                    signer
-                },
-                [
-                    retrieveAddress,
-                    signer
-                ]
-            ];
-        } else {
-            return {
-                ...state,
-                message: 'No wallet present'
-            };
-        }
-    } else {
-        const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
-        const signer = provider.getSigner();
+            const address = await signer.getAddress();
 
-        return [
-            {
-                ...state,
-                message: null,
-                provider,
-                signer
-            },
-            [
-                retrieveAddress,
-                signer
-            ]
-        ];
+            update({ ...state, provider, signer, address });
+        }
+    } catch(err) {
+        console.log(err);
+
+        update({ ...state, message: 'Unable to connect to wallet'});
     }
 }
 
-app({
-    init: {
-        message: null,
-        provider: ethers.getDefaultProvider(),
-        signer: null,
-        address: null
-    },
-    view: state => h('div', {}, [
+function render(state) {
+    return h('div', {}, [
         state.message !== null ?
-            h('div', {}, [state.message]) :
+            h('div', {}, state.message) :
             [],
-        h('div', {},
+        h('div', {}, [
             state.signer === null ?
-            h('button', { onClick: Connect }, ['Connect']):
+            h('button', { onclick: connect }, 'Connect') :
             [
-                h('div', {}, ['Connected to wallet']),
-                h('div', {},  state.address !== null ?
-                    state.address :
-                    'Loading address...'
-                )
+                h('div', {}, 'Connected to wallet'),
+                h('div', {},  state.address !== null ? state.address : 'Loading address...')
             ]
-        )
-    ]),
-    node: document.getElementById('app')
+        ])
+    ]);
+}
+
+let tree = render({
+    message: null,
+    provider: process.env.NODE_ENV === 'production' ? ethers.getDefaultProvider() : new ethers.providers.JsonRpcProvider('http://localhost:8545'),
+    signer: null,
+    address: null,
+    vaults: []
 });
+let root = create(tree);
+document.body.appendChild(root);
+
+function update(state) {
+    const newTree = render(state);
+    const patches = diff(tree, newTree);
+    root = patch(root, patches);
+    tree = newTree;
+}
