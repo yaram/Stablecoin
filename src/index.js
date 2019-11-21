@@ -44,8 +44,7 @@ function Connect(state) {
         } else {
             return {
                 ...state,
-                message: null,
-                provider: ethers.getDefaultProvider()
+                message: 'No wallet present'
             };
         }
     } else {
@@ -70,7 +69,7 @@ function Connect(state) {
 app({
     init: {
         message: null,
-        provider: null,
+        provider: ethers.getDefaultProvider(),
         signer: null,
         address: null
     },
@@ -79,10 +78,10 @@ app({
             h('div', {}, [state.message]) :
             [],
         h('div', {},
-            state.provider === null ?
+            state.signer === null ?
             h('button', { onClick: Connect }, ['Connect']):
             [
-                h('div', {}, ['Connected to provider']),
+                h('div', {}, ['Connected to wallet']),
                 h('div', {},  state.address !== null ?
                     state.address :
                     'Loading address...'
