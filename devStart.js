@@ -35,6 +35,8 @@ ganache.server().listen(8545, (err, blockchain) => {
                 return stablecoinFactory.deploy(ethPriceSource.address, tokenPriceSource.address, 150, "Test", "TEST", 18);
             })
             .then(stablecoin => {
+                console.log(`Primary contract deployed at ${stablecoin.address}`);
+
                 process.env.CONTRACT_ADDRESS = stablecoin.address;
 
                 const bundler = new Bundler('src/index.html');
