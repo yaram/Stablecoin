@@ -10,12 +10,12 @@ contract Stablecoin is ERC20, ERC20Detailed {
 
     uint256 private _minimumCollateralPercentage;
 
-    uint256 vaultCount;
+    uint256 public vaultCount;
 
-    mapping(uint256 => bool) vaultExistance;
-    mapping(uint256 => address) vaultOwner;
-    mapping(uint256 => uint256) vaultCollateral;
-    mapping(uint256 => uint256) vaultDebt;
+    mapping(uint256 => bool) public vaultExistance;
+    mapping(uint256 => address) public vaultOwner;
+    mapping(uint256 => uint256) public vaultCollateral;
+    mapping(uint256 => uint256) public vaultDebt;
 
     constructor(
         address ethPriceSource,
