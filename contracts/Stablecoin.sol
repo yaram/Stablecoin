@@ -10,7 +10,7 @@ contract Stablecoin is ERC20, ERC20Detailed {
 
     uint256 private _minimumCollateralPercentage;
 
-    uint256 private _nextVaultID;
+    uint256 vaultCount;
 
     mapping(uint256 => bool) vaultExistance;
     mapping(uint256 => address) vaultOwner;
@@ -68,10 +68,10 @@ contract Stablecoin is ERC20, ERC20Detailed {
     }
 
     function createVault() external returns (uint256) {
-        uint256 id = _nextVaultID;
-        _nextVaultID += 1;
+        uint256 id = vaultCount;
+        vaultCount += 1;
 
-        assert(_nextVaultID > id);
+        assert(vaultCount > id);
 
         vaultExistance[id] = true;
         vaultOwner[id] = msg.sender;
