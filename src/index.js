@@ -1,6 +1,7 @@
 import { h, diff, patch, create } from 'virtual-dom';
 import { ethers } from 'ethers';
 import Stablecoin from '../build/Stablecoin.json';
+import PriceSource from '../build/PriceSource.json';
 
 async function connect() {
     update({ ...state, message: null });
@@ -77,12 +78,32 @@ async function loadVaults() {
     }
 }
 
+async function loadPrices() {
+    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.provider);
+
+    const ethPriceSourceAddress = await contract.ethPriceSource();
+    const ethPriceSource = new ethers.Contract(ethPriceSourceAddress, PriceSource.abi, state.provider);
+
+    const tokenPriceSourceAddress = await contract.tokenPriceSource();
+    const tokenPriceSource = new ethers.Contract(tokenPriceSourceAddress, PriceSource.abi, state.provider);
+
+    const ethPrice = await ethPriceSource.getPrice();
+    const tokenPrice = await tokenPriceSource.getPrice();
+
+    update({
+        ...state,
+        ethPrice,
+        tokenPrice
+    });
+}
+
 async function createVault() {
     const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.signer);
 
     await contract.createVault();
 
     loadVaults();
+    loadPrices();
 }
 
 function render() {
@@ -101,7 +122,11 @@ function render() {
         state.signer !== null ?
             h('button', { onclick: createVault }, 'Create Vault') :
             [],
-        state.vaults.map(vault => h('div', {}, `${vault.id} (${vault.owner}): ${vault.debt}/${vault.collateral}`))
+        state.vaults.map(vault => h('div', {},
+            state.ethPrice !== null && state.tokenPrice !== null ?
+                `${vault.id} (${vault.owner}): ${vault.debt}/${vault.collateral} (${vault.debt * state.tokenPrice}/${vault.collateral * state.ethPrice})` :
+                `${vault.id} (${vault.owner}): ${vault.debt}/${vault.collateral}`
+        ))
     ]);
 }
 
@@ -110,7 +135,9 @@ let state = {
     provider: process.env.NODE_ENV === 'production' ? ethers.getDefaultProvider() : new ethers.providers.JsonRpcProvider('http://localhost:8545'),
     signer: null,
     address: null,
-    vaults: []
+    vaults: [],
+    ethPrice: null,
+    tokenPrice: null
 };
 let tree = render();
 let root = create(tree);
@@ -128,3 +155,4 @@ function update(newState) {
 }
 
 loadVaults();
+loadPrices();
