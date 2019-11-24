@@ -1,5 +1,6 @@
 import { h, diff, patch, create } from 'virtual-dom';
 import { ethers } from 'ethers';
+import Stablecoin from '../build/Stablecoin.json';
 
 async function connect() {
     update({ ...state, message: null });
@@ -57,8 +58,35 @@ function render() {
                 h('div', {}, 'Connected to wallet'),
                 h('div', {},  state.address !== null ? state.address : 'Loading address...')
             ]
-        ])
+        ]),
+        state.vaults.map(vault => h('div', {}, `${vault.id} (${vault.owner}): ${vault.debt}/${vault.collateral}`))
     ]);
+}
+
+async function loadVaults() {
+    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.provider);
+
+    const vaultCount = await contract.vaultCount();
+
+    for(var i = 0; i < vaultCount; i += 1) {
+        const existance = await contract.vaultExistance(i);
+
+        if(existance) {
+            const owner = await contract.vaultOwner(i);
+            const collateral = await contract.vaultCollateral(i);
+            const debt = await contract.vaultDebt(i);
+
+            update({
+                ...state,
+                vaults: [...state.vaults, {
+                    id: i,
+                    owner,
+                    collateral,
+                    debt
+                }]
+            });
+        }
+    }
 }
 
 let state = {
@@ -82,3 +110,5 @@ function update(newState) {
 
     tree = newTree;
 }
+
+loadVaults();
