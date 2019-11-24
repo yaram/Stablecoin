@@ -5,8 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 import "./PriceSource.sol";
 
 contract Stablecoin is ERC20, ERC20Detailed {
-    PriceSource private _ethPriceSource;
-    PriceSource private _tokenPriceSource;
+    PriceSource public ethPriceSource;
+    PriceSource public tokenPriceSource;
 
     uint256 private _minimumCollateralPercentage;
 
@@ -18,19 +18,19 @@ contract Stablecoin is ERC20, ERC20Detailed {
     mapping(uint256 => uint256) public vaultDebt;
 
     constructor(
-        address ethPriceSource,
-        address tokenPriceSource,
+        address ethPriceSourceAddress,
+        address tokenPriceSourceAddress,
         uint256 minimumCollateralPercentage,
         string memory name,
         string memory symbol,
         uint8 decimals
     ) ERC20Detailed(name, symbol, decimals) public {
-        assert(ethPriceSource != address(0));
-        assert(tokenPriceSource != address(0));
+        assert(ethPriceSourceAddress != address(0));
+        assert(tokenPriceSourceAddress != address(0));
         assert(minimumCollateralPercentage != 0);
 
-        _ethPriceSource = PriceSource(ethPriceSource);
-        _tokenPriceSource = PriceSource(tokenPriceSource);
+        ethPriceSource = PriceSource(ethPriceSourceAddress);
+        tokenPriceSource = PriceSource(tokenPriceSourceAddress);
         _minimumCollateralPercentage = minimumCollateralPercentage;
     }
 
@@ -41,14 +41,14 @@ contract Stablecoin is ERC20, ERC20Detailed {
     }
 
     function calculateCollateralProperties(uint256 collateral, uint256 debt) private view returns (uint256, uint256) {
-        assert(_ethPriceSource.getPrice() != 0);
-        assert(_tokenPriceSource.getPrice() != 0);
+        assert(ethPriceSource.getPrice() != 0);
+        assert(tokenPriceSource.getPrice() != 0);
 
-        uint256 collateralValue = collateral * _ethPriceSource.getPrice();
+        uint256 collateralValue = collateral * ethPriceSource.getPrice();
 
         assert(collateralValue > collateral);
 
-        uint256 debtValue = debt * _tokenPriceSource.getPrice();
+        uint256 debtValue = debt * tokenPriceSource.getPrice();
 
         assert(debtValue > debt);
 
@@ -149,7 +149,7 @@ contract Stablecoin is ERC20, ERC20Detailed {
 
         uint256 maximumDebtValue = collateralValueTimes100 / _minimumCollateralPercentage;
 
-        uint256 maximumDebt = maximumDebtValue / _tokenPriceSource.getPrice();
+        uint256 maximumDebt = maximumDebtValue / tokenPriceSource.getPrice();
 
         uint256 debtDifference = vaultDebt[vaultID] - maximumDebt;
 
