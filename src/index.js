@@ -46,24 +46,12 @@ async function connect() {
     }
 }
 
-function render() {
-    return h('div', {}, [
-        state.message !== null ?
-            h('div', {}, state.message) :
-            [],
-        h('div', {}, [
-            state.signer === null ?
-            h('button', { onclick: connect }, 'Connect') :
-            [
-                h('div', {}, 'Connected to wallet'),
-                h('div', {},  state.address !== null ? state.address : 'Loading address...')
-            ]
-        ]),
-        state.vaults.map(vault => h('div', {}, `${vault.id} (${vault.owner}): ${vault.debt}/${vault.collateral}`))
-    ]);
-}
-
 async function loadVaults() {
+    update({
+        ...state,
+        vaults: []
+    });
+
     const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.provider);
 
     const vaultCount = await contract.vaultCount();
@@ -87,6 +75,34 @@ async function loadVaults() {
             });
         }
     }
+}
+
+async function createVault() {
+    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.signer);
+
+    await contract.createVault();
+
+    loadVaults();
+}
+
+function render() {
+    return h('div', {}, [
+        state.message !== null ?
+            h('div', {}, state.message) :
+            [],
+        h('div', {}, [
+            state.signer === null ?
+            h('button', { onclick: connect }, 'Connect') :
+            [
+                h('div', {}, 'Connected to wallet'),
+                h('div', {},  state.address !== null ? state.address : 'Loading address...')
+            ]
+        ]),
+        state.signer !== null ?
+            h('button', { onclick: createVault }, 'Create Vault') :
+            [],
+        state.vaults.map(vault => h('div', {}, `${vault.id} (${vault.owner}): ${vault.debt}/${vault.collateral}`))
+    ]);
 }
 
 let state = {
