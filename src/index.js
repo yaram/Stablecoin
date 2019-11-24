@@ -1,7 +1,7 @@
 import { h, diff, patch, create } from 'virtual-dom';
 import { ethers } from 'ethers';
 
-async function connect(state) {
+async function connect() {
     update({ ...state, message: null });
 
     try {
@@ -45,7 +45,7 @@ async function connect(state) {
     }
 }
 
-function render(state) {
+function render() {
     return h('div', {}, [
         state.message !== null ?
             h('div', {}, state.message) :
@@ -61,19 +61,24 @@ function render(state) {
     ]);
 }
 
-let tree = render({
+let state = {
     message: null,
     provider: process.env.NODE_ENV === 'production' ? ethers.getDefaultProvider() : new ethers.providers.JsonRpcProvider('http://localhost:8545'),
     signer: null,
     address: null,
     vaults: []
-});
+};
+let tree = render();
 let root = create(tree);
 document.body.appendChild(root);
 
-function update(state) {
-    const newTree = render(state);
+function update(newState) {
+    state = newState;
+
+    const newTree = render();
+
     const patches = diff(tree, newTree);
     root = patch(root, patches);
+
     tree = newTree;
 }
