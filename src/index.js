@@ -71,7 +71,8 @@ async function loadVaults() {
                     id: i,
                     owner,
                     collateral,
-                    debt
+                    debt,
+                    amountText: ''
                 }]
             });
         }
@@ -106,6 +107,84 @@ async function createVault() {
     loadPrices();
 }
 
+function amountTextChange(e, index) {
+    let vaults = [...state.vaults];
+
+    vaults[index] = {
+        ...state.vaults[index],
+        amountText: e.target.value
+    };
+
+    update({
+        ...state,
+        vaults
+    });
+}
+
+async function deposit(index) {
+    let amount;
+    try {
+        amount = ethers.utils.parseEther(state.vaults[index].amountText.trim());
+    } catch(err) {
+        return;
+    }
+
+    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.signer);
+
+    await contract.depositCollateral(state.vaults[index].id, { value: amount });
+
+    loadVaults();
+    loadPrices();
+}
+
+async function withdraw(index) {
+    let amount;
+    try {
+        amount = ethers.utils.parseEther(state.vaults[index].amountText.trim());
+    } catch(err) {
+        return;
+    }
+
+    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.signer);
+
+    await contract.withdrawCollateral(state.vaults[index].id, amount);
+
+    loadVaults();
+    loadPrices();
+}
+
+async function payBack(index) {
+    let amount;
+    try {
+        amount = ethers.utils.parseEther(state.vaults[index].amountText.trim());
+    } catch(err) {
+        return;
+    }
+
+    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.signer);
+
+    await contract.payBackToken(state.vaults[index].id, amount);
+
+    loadVaults();
+    loadPrices();
+}
+
+async function borrow(index) {
+    let amount;
+    try {
+        amount = ethers.utils.parseEther(state.vaults[index].amountText.trim());
+    } catch(err) {
+        return;
+    }
+
+    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.signer);
+
+    await contract.borrowToken(state.vaults[index].id, amount);
+
+    loadVaults();
+    loadPrices();
+}
+
 function render() {
     return h('div', {}, [
         state.message !== null ?
@@ -122,11 +201,20 @@ function render() {
         state.signer !== null ?
             h('button', { onclick: createVault }, 'Create Vault') :
             [],
-        state.vaults.map(vault => h('div', {},
-            state.ethPrice !== null && state.tokenPrice !== null ?
+        state.vaults.map((vault, index) => h('div', {}, [
+            h('div', {}, state.ethPrice !== null && state.tokenPrice !== null ?
                 `${vault.id} (${vault.owner}): ${vault.debt}/${vault.collateral} (${vault.debt * state.tokenPrice}/${vault.collateral * state.ethPrice})` :
                 `${vault.id} (${vault.owner}): ${vault.debt}/${vault.collateral}`
-        ))
+            ),
+            state.signer !== null ? [
+                h('input', { type: 'text', value: vault.amountText, onchange: e => amountTextChange(e, index) }),
+                h('button', { onclick: () => deposit(index) }, 'Deposit ETH'),
+                h('button', { onclick: () => withdraw(index) }, 'Withdraw ETH'),
+                h('button', { onclick: () => payBack(index) }, 'Pay back token debt'),
+                h('button', { onclick: () => borrow(index) }, 'Borrow token')
+            ] :
+            []
+        ]))
     ]);
 }
 
