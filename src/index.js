@@ -19,13 +19,19 @@ async function connect() {
                         signer: provider.getSigner(),
                         address: addresses[0]
                     });
+
+                    loadBalances();
             } else if(window.web3) {
                 const provider = new ethers.providers.Web3Provider(window.web3.currentProvider);
                 const signer = provider.getSigner();
 
+                update({ ...state, provider, signer});
+
                 const address = await signer.getAddress();
 
-                update({ ...state, provider, signer, address });
+                update({ ...state, address });
+
+                loadBalances();
             } else {
                 return {
                     ...state,
@@ -36,9 +42,13 @@ async function connect() {
             const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
             const signer = provider.getSigner();
 
+            update({ ...state, provider, signer });
+
             const address = await signer.getAddress();
 
-            update({ ...state, provider, signer, address });
+            update({ ...state, address });
+
+            loadBalances();
         }
     } catch(err) {
         console.log(err);
@@ -98,6 +108,16 @@ async function loadPrices() {
     });
 }
 
+async function loadBalances() {
+    const ethBalance = await state.provider.getBalance(state.address);
+
+    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.signer);
+
+    const tokenBalance = await contract.balanceOf(state.address);
+    
+    update({...state, ethBalance, tokenBalance});
+}
+
 async function createVault() {
     const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.signer);
 
@@ -135,6 +155,7 @@ async function deposit(index) {
 
     loadVaults();
     loadPrices();
+    loadBalances();
 }
 
 async function withdraw(index) {
@@ -151,6 +172,7 @@ async function withdraw(index) {
 
     loadVaults();
     loadPrices();
+    loadBalances();
 }
 
 async function payBack(index) {
@@ -167,6 +189,7 @@ async function payBack(index) {
 
     loadVaults();
     loadPrices();
+    loadBalances();
 }
 
 async function borrow(index) {
@@ -183,6 +206,7 @@ async function borrow(index) {
 
     loadVaults();
     loadPrices();
+    loadBalances();
 }
 
 function render() {
@@ -199,7 +223,12 @@ function render() {
             ]
         ]),
         state.signer !== null ?
-            h('button', { onclick: createVault }, 'Create Vault') :
+            [
+                state.ethBalance !== null && state.tokenBalance !== null ?
+                    h('div', {}, `Balance: ${ethers.utils.formatEther(state.ethBalance)}, ${ethers.utils.formatEther(state.tokenBalance)}`) :
+                    [],
+                h('button', { onclick: createVault }, 'Create Vault')
+            ] :
             [],
         state.vaults.map((vault, index) => h('div', {}, [
             h('div', {}, state.ethPrice !== null && state.tokenPrice !== null ?
@@ -225,7 +254,9 @@ let state = {
     address: null,
     vaults: [],
     ethPrice: null,
-    tokenPrice: null
+    tokenPrice: null,
+    ethBalance: null,
+    tokenBalance: null
 };
 let tree = render();
 let root = create(tree);
