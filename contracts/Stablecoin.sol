@@ -46,11 +46,11 @@ contract Stablecoin is ERC20, ERC20Detailed {
 
         uint256 collateralValue = collateral * ethPriceSource.getPrice();
 
-        assert(collateralValue > collateral);
+        assert(collateralValue >= collateral);
 
         uint256 debtValue = debt * tokenPriceSource.getPrice();
 
-        assert(debtValue > debt);
+        assert(debtValue >= debt);
 
         uint256 collateralValueTimes100 = collateralValue * 100;
 
@@ -71,7 +71,7 @@ contract Stablecoin is ERC20, ERC20Detailed {
         uint256 id = vaultCount;
         vaultCount += 1;
 
-        assert(vaultCount > id);
+        assert(vaultCount >= id);
 
         vaultExistance[id] = true;
         vaultOwner[id] = msg.sender;
@@ -82,7 +82,7 @@ contract Stablecoin is ERC20, ERC20Detailed {
     function destroyVault(uint256 vaultID) external onlyVaultOwner(vaultID) {
         require(vaultDebt[vaultID] != 0, "Vault has outstanding debt");
 
-        if(vaultCollateral[vaultID] > 0) {
+        if(vaultCollateral[vaultID] >= 0) {
             msg.sender.transfer(vaultCollateral[vaultID]);
         }
 
@@ -99,7 +99,7 @@ contract Stablecoin is ERC20, ERC20Detailed {
     function depositCollateral(uint256 vaultID) external payable onlyVaultOwner(vaultID) {
         uint256 newCollateral = vaultCollateral[vaultID] + msg.value;
 
-        assert(newCollateral > vaultCollateral[vaultID]);
+        assert(newCollateral >= vaultCollateral[vaultID]);
 
         vaultCollateral[vaultID] = newCollateral;
     }
