@@ -203,8 +203,8 @@ function render() {
             [],
         state.vaults.map((vault, index) => h('div', {}, [
             h('div', {}, state.ethPrice !== null && state.tokenPrice !== null ?
-                `${vault.id} (${vault.owner}): ${vault.debt}/${vault.collateral} (${vault.debt * state.tokenPrice}/${vault.collateral * state.ethPrice})` :
-                `${vault.id} (${vault.owner}): ${vault.debt}/${vault.collateral}`
+                `${vault.id} (${vault.owner}): ${ethers.utils.formatEther(vault.debt)}/${ethers.utils.formatEther(vault.collateral)} (${ethers.utils.formatEther(vault.debt * state.tokenPrice)}/${ethers.utils.formatEther(vault.collateral * state.ethPrice)})` :
+                `${vault.id} (${vault.owner}): ${ethers.utils.formatEther(vault.debt)}/${ethers.utils.formatEther(vault.collateral)}`
             ),
             state.signer !== null ? [
                 h('input', { type: 'text', value: vault.amountText, onchange: e => amountTextChange(e, index) }),
