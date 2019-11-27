@@ -90,8 +90,7 @@ async function loadVaults() {
                 id: i,
                 owner,
                 collateral,
-                debt,
-                amountText: ''
+                debt
             });
 
             if(previousSelectedVaultID !== null && i == previousSelectedVaultID && state.selectedVaultIndex === null) {
@@ -144,15 +143,15 @@ async function createVault() {
     loadPrices();
 }
 
-function amountTextChange(e, index) {
-    state.vaults[index].amountText = e.target.value;
+function amountTextChange(e) {
+    state.amountText = e.target.value;
     update();
 }
 
 async function deposit(index) {
     let amount;
     try {
-        amount = ethers.utils.parseEther(state.vaults[index].amountText.trim());
+        amount = ethers.utils.parseEther(state.amountText.trim());
     } catch(err) {
         return;
     }
@@ -169,7 +168,7 @@ async function deposit(index) {
 async function withdraw(index) {
     let amount;
     try {
-        amount = ethers.utils.parseEther(state.vaults[index].amountText.trim());
+        amount = ethers.utils.parseEther(state.amountText.trim());
     } catch(err) {
         return;
     }
@@ -186,7 +185,7 @@ async function withdraw(index) {
 async function payBack(index) {
     let amount;
     try {
-        amount = ethers.utils.parseEther(state.vaults[index].amountText.trim());
+        amount = ethers.utils.parseEther(state.amountText.trim());
     } catch(err) {
         return;
     }
@@ -203,7 +202,7 @@ async function payBack(index) {
 async function borrow(index) {
     let amount;
     try {
-        amount = ethers.utils.parseEther(state.vaults[index].amountText.trim());
+        amount = ethers.utils.parseEther(state.amountText.trim());
     } catch(err) {
         return;
     }
@@ -253,7 +252,7 @@ function render() {
                     [
                         h('div', {}, `Selected vault: ${vaultInfo(state.vaults[state.selectedVaultIndex])}`),
                         h('div', {}, [
-                            h('input', { type: 'text', value: state.vaults[state.selectedVaultIndex].amountText, onchange: e => amountTextChange(e, state.selectedVaultIndex) }),
+                            h('input', { type: 'text', value: state.amountText, onchange: amountTextChange }),
                             h('button', { onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
                             h('button', { onclick: () => withdraw(state.selectedVaultIndex) }, 'Withdraw ETH'),
                             h('button', { onclick: () => payBack(state.selectedVaultIndex) }, 'Pay back token debt'),
@@ -282,6 +281,7 @@ let state = {
     loadingVaults: false,
     vaults: [],
     selectedVaultIndex: null,
+    amountText: '',
     ethPrice: null,
     tokenPrice: null,
     ethBalance: null,
