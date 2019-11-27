@@ -2,10 +2,10 @@ import { h, diff, patch, create } from 'virtual-dom';
 import { ethers } from 'ethers';
 import Stablecoin from '../build/Stablecoin.json';
 import PriceSource from '../build/PriceSource.json';
-import { stat } from 'fs';
 
 async function connect() {
-    update({ ...state, message: null });
+    state.message = null;
+    update();
 
     try {
         if(process.env.NODE_ENV === 'production') {
@@ -14,23 +14,22 @@ async function connect() {
 
                     const provider = new ethers.providers.Web3Provider(window.ethereum);
 
-                    update({
-                        ...state,
-                        provider,
-                        signer: provider.getSigner(),
-                        address: addresses[0]
-                    });
+                    state.provider = provider;
+                    state.signer = provider.getSigner();
+                    state.address =  addresses[0];
+                    update();
 
                     loadBalances();
             } else if(window.web3) {
                 const provider = new ethers.providers.Web3Provider(window.web3.currentProvider);
                 const signer = provider.getSigner();
 
-                update({ ...state, provider, signer});
+                state.provider = provider;
+                state.signer = signer;
+                update();
 
-                const address = await signer.getAddress();
-
-                update({ ...state, address });
+                state.address = await signer.getAddress();
+                update();
 
                 loadBalances();
             } else {
@@ -43,18 +42,20 @@ async function connect() {
             const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
             const signer = provider.getSigner();
 
-            update({ ...state, provider, signer });
+            state.provider = provider;
+            state.signer = signer;
+            update();
 
-            const address = await signer.getAddress();
-
-            update({ ...state, address });
+            state.address = await signer.getAddress();
+            update();
 
             loadBalances();
         }
     } catch(err) {
         console.log(err);
 
-        update({ ...state, message: 'Unable to connect to wallet'});
+        state.message = 'Unable to connect to wallet';
+        update();
     }
 }
 
@@ -64,11 +65,9 @@ async function loadVaults() {
         previousSelectedVaultID = state.vaults[state.selectedVaultIndex].id;
     }
 
-    update({
-        ...state,
-        vaults: [],
-        selectedVaultIndex: null
-    });
+    state.vaults = [];
+    state.selectedVaultIndex = null;
+    update();
 
     const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.provider);
 
@@ -82,23 +81,19 @@ async function loadVaults() {
             const collateral = await contract.vaultCollateral(i);
             const debt = await contract.vaultDebt(i);
 
-            update({
-                ...state,
-                vaults: [...state.vaults, {
-                    id: i,
-                    owner,
-                    collateral,
-                    debt,
-                    amountText: ''
-                }]
+            state.vaults.push({
+                id: i,
+                owner,
+                collateral,
+                debt,
+                amountText: ''
             });
 
             if(previousSelectedVaultID !== null && i == previousSelectedVaultID && state.selectedVaultIndex === null) {
-                update({
-                    ...state,
-                    selectedVaultIndex: state.vaults.length - 1
-                });
+                state.selectedVaultIndex = state.vaults.length - 1;
             }
+
+            update();
         }
     }
 }
@@ -115,11 +110,9 @@ async function loadPrices() {
     const ethPrice = await ethPriceSource.getPrice();
     const tokenPrice = await tokenPriceSource.getPrice();
 
-    update({
-        ...state,
-        ethPrice,
-        tokenPrice
-    });
+    state.ethPrice = ethPrice;
+    state.tokenPrice = tokenPrice;
+    update();
 }
 
 async function loadBalances() {
@@ -129,7 +122,9 @@ async function loadBalances() {
 
     const tokenBalance = await contract.balanceOf(state.address);
     
-    update({...state, ethBalance, tokenBalance});
+    state.ethBalance = ethBalance;
+    state.tokenBalance = tokenBalance;
+    update();
 }
 
 async function createVault() {
@@ -142,17 +137,8 @@ async function createVault() {
 }
 
 function amountTextChange(e, index) {
-    let vaults = [...state.vaults];
-
-    vaults[index] = {
-        ...state.vaults[index],
-        amountText: e.target.value
-    };
-
-    update({
-        ...state,
-        vaults
-    });
+    state.vaults[index].amountText = e.target.value;
+    update();
 }
 
 async function deposit(index) {
@@ -223,6 +209,11 @@ async function borrow(index) {
     loadBalances();
 }
 
+function selectVault(index) {
+    state.selectedVaultIndex = index;
+    update();
+}
+
 function vaultInfo(vault) {
     if(state.ethPrice && state.tokenPrice !== null) {
         return `${vault.id} (${vault.owner}): ${ethers.utils.formatEther(vault.debt)}/${ethers.utils.formatEther(vault.collateral)} (${ethers.utils.formatEther(vault.debt * state.tokenPrice)}/${ethers.utils.formatEther(vault.collateral * state.ethPrice)})`;
@@ -268,7 +259,7 @@ function render() {
             state.address !== null && vault.owner === state.address ?
                 h('div', {}, [
                     vaultInfo(vault),
-                    h('button', { onclick: () => update({ ...state, selectedVaultIndex: index }) }, 'Select')
+                    h('button', { onclick: () => selectVault(index) }, 'Select')
                 ]) :
                 h('div', {}, vaultInfo(vault))
         ]))
@@ -291,9 +282,7 @@ let tree = render();
 let root = create(tree);
 document.body.appendChild(root);
 
-function update(newState) {
-    state = newState;
-
+function update() {
     const newTree = render();
 
     const patches = diff(tree, newTree);
