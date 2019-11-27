@@ -223,8 +223,8 @@ function selectVault(index) {
 }
 
 function vaultInfo(vault) {
-    if(state.ethPrice && state.tokenPrice !== null) {
-        return `${vault.id} (${vault.owner}): ${ethers.utils.formatEther(vault.debt)}/${ethers.utils.formatEther(vault.collateral)} (${ethers.utils.formatEther(vault.debt * state.tokenPrice)}/${ethers.utils.formatEther(vault.collateral * state.ethPrice)})`;
+    if(state.ethPrice !== null && state.tokenPrice !== null) {
+        return `${vault.id} (${vault.owner}): ${ethers.utils.formatEther(vault.debt)}/${ethers.utils.formatEther(vault.collateral)} (${ethers.utils.formatEther(vault.debt.mul(state.tokenPrice))}/${ethers.utils.formatEther(vault.collateral.mul(state.ethPrice))})`;
     } else {
         return `${vault.id} (${vault.owner}): ${ethers.utils.formatEther(vault.debt)}/${ethers.utils.formatEther(vault.collateral)}`;
     }
