@@ -2,6 +2,7 @@ import { h, diff, patch, create } from 'virtual-dom';
 import { ethers } from 'ethers';
 import Stablecoin from '../build/Stablecoin.json';
 import PriceSource from '../build/PriceSource.json';
+import { stat } from 'fs';
 
 async function connect() {
     update({ ...state, message: null });
@@ -264,7 +265,7 @@ function render() {
             ] :
             [],
         state.vaults.map((vault, index) => h('div', {}, [
-            state.signer !== null ?
+            state.address !== null && vault.owner === state.address ?
                 h('div', {}, [
                     vaultInfo(vault),
                     h('button', { onclick: () => update({ ...state, selectedVaultIndex: index }) }, 'Select')
