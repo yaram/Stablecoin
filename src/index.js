@@ -60,11 +60,16 @@ async function connect() {
 }
 
 async function loadVaults() {
+    if(state.loadingVaults) {
+        return;
+    }
+
     let previousSelectedVaultID = null;
     if(state.selectedVaultIndex !== null) {
         previousSelectedVaultID = state.vaults[state.selectedVaultIndex].id;
     }
 
+    state.loadingVaults = true;
     state.vaults = [];
     state.selectedVaultIndex = null;
     update();
@@ -96,6 +101,9 @@ async function loadVaults() {
             update();
         }
     }
+
+    state.loadingVaults = false;
+    update();
 }
 
 async function loadPrices() {
@@ -271,6 +279,7 @@ let state = {
     provider: process.env.NODE_ENV === 'production' ? ethers.getDefaultProvider() : new ethers.providers.JsonRpcProvider('http://localhost:8545'),
     signer: null,
     address: null,
+    loadingVaults: false,
     vaults: [],
     selectedVaultIndex: null,
     ethPrice: null,
