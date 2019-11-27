@@ -276,7 +276,7 @@ function render() {
 
 let state = {
     message: null,
-    provider: process.env.NODE_ENV === 'production' ? ethers.getDefaultProvider() : new ethers.providers.JsonRpcProvider('http://localhost:8545'),
+    provider: process.env.NODE_ENV === 'production' ? ethers.getDefaultProvider(process.env.NETWORK) : new ethers.providers.JsonRpcProvider('http://localhost:8545'),
     signer: null,
     address: null,
     loadingVaults: false,
