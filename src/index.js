@@ -243,48 +243,45 @@ function render() {
     return h('div', { className: 'container' }, [
         h('section', { className: 'section' },
             h('div', { className: 'container' }, 
-                [
-                    state.walletError !== null ?
-                        h('p', { className: 'has-text-danger' }, state.walletError) :
-                        [],
+                h('div', { className: 'level' }, [
                     state.address === null ?
                         h('button', { className: 'button', onclick: connect }, 'Connect') :
-                        [
-                            h('p', {}, 'Connected to wallet'),
-                            h('p', {},  state.address !== null ? state.address : 'Loading address...')
-                        ]
-                ]
+                        h('p', {},  state.address !== null ? state.address : 'Loading address...'),
+                    state.ethBalance !== null && state.tokenBalance !== null ?
+                        h('p', {}, `${ethers.utils.formatEther(state.ethBalance)} ETH, ${ethers.utils.formatEther(state.tokenBalance)} Token`) :
+                        []
+                ]),
+                state.walletError !== null ?
+                    h('p', { className: 'has-text-danger' }, state.walletError) :
+                    [],
             )
         ),
-        h('section', { className: 'section' },  state.address !== null ?
-            [
-                state.ethBalance !== null && state.tokenBalance !== null ?
-                    h('p', {}, `Balance: ${ethers.utils.formatEther(state.ethBalance)}, ${ethers.utils.formatEther(state.tokenBalance)}`) :
-                    [],
-                h('button', { className: 'button', onclick: createVault }, 'Create Vault'),
-                state.selectedVaultIndex !== null ?
-                    [
-                        h('p', {}, `Selected vault: ${vaultInfo(state.vaults[state.selectedVaultIndex])}`),
-                        h('div', {}, [
-                            h('input', { type: 'text', className: 'input', placeholder: 'amount', value: state.amountText, onchange: amountTextChange }),
-                            h('button', { className: 'button', onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
-                            h('button', { className: 'button', onclick: () => withdraw(state.selectedVaultIndex) }, 'Withdraw ETH'),
-                            h('button', { className: 'button', onclick: () => payBack(state.selectedVaultIndex) }, 'Pay back token debt'),
-                            h('button', { className: 'button', onclick: () => borrow(state.selectedVaultIndex) }, 'Borrow token')
-                        ]),
-                    ] :
-                    [],
-            ] :
-            []
-        ),
-        h('section', { className: 'section' }, state.vaults.map((vault, index) => h('div', { className: 'box' }, [
-            state.address !== null && vault.owner === state.address ?
+        state.selectedVaultIndex !== null ? 
+            h('section', { className: 'section' }, [
+                h('p', { className: 'space-bottom' }, `Selected vault: ${vaultInfo(state.vaults[state.selectedVaultIndex])}`),
                 h('div', {}, [
-                    h('p', {} , vaultInfo(vault)),
-                    h('button', { className: 'button', onclick: () => selectVault(index) }, 'Select')
-                ]) :
-                h('p', {}, vaultInfo(vault))
-        ])))
+                    h('input', { type: 'text', className: 'input space-bottom', placeholder: 'amount', value: state.amountText, onchange: amountTextChange }),
+                    h('button', { className: 'button space-right', onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
+                    h('button', { className: 'button space-right', onclick: () => withdraw(state.selectedVaultIndex) }, 'Withdraw ETH'),
+                    h('button', { className: 'button space-right', onclick: () => payBack(state.selectedVaultIndex) }, 'Pay back token debt'),
+                    h('button', { className: 'button', onclick: () => borrow(state.selectedVaultIndex) }, 'Borrow token')
+                ]),
+            ]) :
+            [],
+        h('section', { className: 'section' }, [
+            state.address !== null ?
+                h('button', { className: 'button space-bottom', onclick: createVault }, 'Create Vault') :
+                [],
+            state.vaults.map((vault, index) => h('div', { className: 'box' },
+                    state.address !== null && vault.owner === state.address ?
+                        h('div', {}, [
+                            h('p', {} , vaultInfo(vault)),
+                            h('button', { className: 'button', onclick: () => selectVault(index) }, 'Select')
+                        ]) :
+                        h('p', {}, vaultInfo(vault))
+                )
+            )
+        ])
     ]);
 }
 

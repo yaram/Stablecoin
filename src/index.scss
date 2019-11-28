@@ -3,7 +3,16 @@
 @import "../node_modules/bulma/sass/layout/_all.sass";
 @import "../node_modules/bulma/sass/elements/_all.sass";
 @import "../node_modules/bulma/sass/form/_all.sass";
+@import "../node_modules/bulma/sass/components/_all.sass";
 
 .container {
     background-color: #f8f8f8;
+}
+
+.space-bottom {
+    margin-bottom: $block-spacing;
+}
+
+.space-right {
+    margin-right: $block-spacing;
 }
