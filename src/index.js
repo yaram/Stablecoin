@@ -158,6 +158,16 @@ function amountTextChange(e) {
     update();
 }
 
+function isAmountTextValid() {
+    try {
+        ethers.utils.parseEther(state.amountText.trim());
+
+        return true;
+    } catch(err) {
+        return false;
+    }
+}
+
 async function deposit(index) {
     let amount;
     try {
@@ -260,11 +270,11 @@ function render() {
             h('section', { className: 'section' }, [
                 h('p', { className: 'space-bottom' }, `Selected vault: ${vaultInfo(state.vaults[state.selectedVaultIndex])}`),
                 h('div', {}, [
-                    h('input', { type: 'text', className: 'input space-bottom', placeholder: 'amount', value: state.amountText, onchange: amountTextChange }),
-                    h('button', { className: 'button space-right', onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
-                    h('button', { className: 'button space-right', onclick: () => withdraw(state.selectedVaultIndex) }, 'Withdraw ETH'),
-                    h('button', { className: 'button space-right', onclick: () => payBack(state.selectedVaultIndex) }, 'Pay back token debt'),
-                    h('button', { className: 'button', onclick: () => borrow(state.selectedVaultIndex) }, 'Borrow token')
+                    h('input', { type: 'text', className: `input space-bottom ${state.amountText === '' || isAmountTextValid() ? '' : 'is-danger'}`, placeholder: 'amount', value: state.amountText, oninput: amountTextChange }),
+                    h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
+                    h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => withdraw(state.selectedVaultIndex) }, 'Withdraw ETH'),
+                    h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => payBack(state.selectedVaultIndex) }, 'Pay back token debt'),
+                    h('button', { className: 'button', disabled: !isAmountTextValid(), onclick: () => borrow(state.selectedVaultIndex) }, 'Borrow token')
                 ]),
             ]) :
             [],
@@ -276,7 +286,7 @@ function render() {
                     state.address !== null && vault.owner === state.address ?
                         h('div', {}, [
                             h('p', {} , vaultInfo(vault)),
-                            h('button', { className: 'button', onclick: () => selectVault(index) }, 'Select')
+                            h('button', { className: 'button', disabled: state.selectedVaultIndex === index, onclick: () => selectVault(index) }, 'Select')
                         ]) :
                         h('p', {}, vaultInfo(vault))
                 )
