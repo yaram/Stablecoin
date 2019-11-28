@@ -294,9 +294,9 @@ function render() {
                 state.ethPrice !== null && state.tokenPrice !== null ?
                     h('div', { className: 'columns' }, [
                         h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Collateral Value'),
-                        h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].collateral.mul(state.ethPrice))} ${target_symbol}`),
+                        h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].collateral.mul(state.ethPrice).div(ethers.utils.parseEther('1')))} ${target_symbol}`),
                         h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Debt Value'),
-                        h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].debt.mul(state.tokenPrice))} ${target_symbol}`)
+                        h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].debt.mul(state.tokenPrice).div(ethers.utils.parseEther('1')))} ${target_symbol}`)
                     ]) :
                     [],
                 h('div', {}, [
