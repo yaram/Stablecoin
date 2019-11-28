@@ -4,58 +4,67 @@ import Stablecoin from '../build/Stablecoin.json';
 import PriceSource from '../build/PriceSource.json';
 
 async function connect() {
-    state.message = null;
+    state.walletError = null;
     update();
 
-    try {
-        if(process.env.NODE_ENV === 'production') {
-            if(window.ethereum) {
+    if(process.env.NODE_ENV === 'production') {
+        if(window.ethereum) {
+                try {
                     const addresses = await window.ethereum.enable();
-
+                    
                     const provider = new ethers.providers.Web3Provider(window.ethereum);
-
+    
                     state.provider = provider;
                     state.signer = provider.getSigner();
-                    state.address =  addresses[0];
+                    state.address = addresses[0];
                     update();
-
+    
                     loadBalances();
-            } else if(window.web3) {
-                const provider = new ethers.providers.Web3Provider(window.web3.currentProvider);
-                const signer = provider.getSigner();
+                } catch(err) {
+                    state.walletError = 'Error connecting to web3 provider';
+
+                    console.error(err);
+                }
+        } else if(window.web3) {
+            const provider = new ethers.providers.Web3Provider(window.web3.currentProvider);
+            const signer = provider.getSigner();
+
+            try {
+                const address = await signer.getAddress();
 
                 state.provider = provider;
                 state.signer = signer;
-                update();
-
-                state.address = await signer.getAddress();
+                state.address = address;
                 update();
 
                 loadBalances();
-            } else {
-                return {
-                    ...state,
-                    message: 'No wallet present'
-                };
+            } catch(err) {
+                state.walletError = 'Error connecting to web3 provider';
+
+                console.error(err);
             }
         } else {
-            const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
-            const signer = provider.getSigner();
+            state.walletError = 'No web3 provider found';
+            update();
+        }
+    } else {
+        const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+        const signer = provider.getSigner();
+
+        try {
+            const address = await signer.getAddress();
 
             state.provider = provider;
             state.signer = signer;
-            update();
-
-            state.address = await signer.getAddress();
+            state.address = address;
             update();
 
             loadBalances();
-        }
-    } catch(err) {
-        console.log(err);
+        } catch(err) {
+            state.walletError = 'Error connecting to development node';
 
-        state.message = 'Unable to connect to wallet';
-        update();
+            console.error(err);
+        }
     }
 }
 
@@ -234,10 +243,10 @@ function render() {
         h('section', { className: 'section' },
             h('div', { className: 'container' }, 
                 [
-                    state.message !== null ?
-                        h('p', { className: 'has-text-danger' }, state.message) :
+                    state.walletError !== null ?
+                        h('p', { className: 'has-text-danger' }, state.walletError) :
                         [],
-                    state.signer === null ?
+                    state.address === null ?
                         h('button', { className: 'button', onclick: connect }, 'Connect') :
                         [
                             h('p', {}, 'Connected to wallet'),
@@ -246,7 +255,7 @@ function render() {
                 ]
             )
         ),
-        h('section', { className: 'section' },  state.signer !== null ?
+        h('section', { className: 'section' },  state.address !== null ?
             [
                 state.ethBalance !== null && state.tokenBalance !== null ?
                     h('p', {}, `Balance: ${ethers.utils.formatEther(state.ethBalance)}, ${ethers.utils.formatEther(state.tokenBalance)}`) :
@@ -279,7 +288,7 @@ function render() {
 }
 
 let state = {
-    message: null,
+    walletError: null,
     provider: process.env.NODE_ENV === 'production' ? ethers.getDefaultProvider(process.env.NETWORK) : new ethers.providers.JsonRpcProvider('http://localhost:8545'),
     signer: null,
     address: null,
