@@ -22,9 +22,8 @@ contract Stablecoin is ERC20, ERC20Detailed {
         address tokenPriceSourceAddress,
         uint256 minimumCollateralPercentage,
         string memory name,
-        string memory symbol,
-        uint8 decimals
-    ) ERC20Detailed(name, symbol, decimals) public {
+        string memory symbol
+    ) ERC20Detailed(name, symbol, 18) public {
         assert(ethPriceSourceAddress != address(0));
         assert(tokenPriceSourceAddress != address(0));
         assert(minimumCollateralPercentage != 0);
