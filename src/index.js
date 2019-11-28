@@ -262,9 +262,14 @@ function render() {
                     state.address === null ?
                         h('button', { className: 'button', onclick: connect }, 'Connect') :
                         h('p', {},  state.address !== null ? state.address : 'Loading address...'),
-                    state.ethBalance !== null && state.tokenBalance !== null ?
-                        h('p', {}, `${ethers.utils.formatEther(state.ethBalance)} ETH, ${ethers.utils.formatEther(state.tokenBalance)} Token`) :
-                        []
+                    h('div', {}, [
+                        state.ethBalance !== null && state.tokenBalance !== null ?
+                            h('p', {}, `Balance: ${ethers.utils.formatEther(state.ethBalance)} ETH, ${ethers.utils.formatEther(state.tokenBalance)} Token`) :
+                            [],
+                        state.ethPrice !== null && state.tokenPrice !== null ?
+                            h('p', {}, `ETH price: ${ethers.utils.formatEther(state.ethPrice)}, Token price: ${ethers.utils.formatEther(state.tokenPrice)}`) :
+                            []
+                    ])
                 ]),
                 state.walletError !== null ?
                     h('p', { className: 'has-text-danger' }, state.walletError) :
