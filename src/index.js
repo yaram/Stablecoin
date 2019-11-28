@@ -273,7 +273,21 @@ function render() {
         ),
         state.selectedVaultIndex !== null ? 
             h('section', { className: 'section' }, [
-                h('p', { className: 'space-bottom' }, `Selected vault: ${vaultInfo(state.vaults[state.selectedVaultIndex])}`),
+                h('h1', { className: 'title' }, `Vault #${state.vaults[state.selectedVaultIndex].id}`),
+                h('div', { className: 'columns' }, [
+                    h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Collateral'),
+                    h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].collateral)} ETH`),
+                    h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Debt'),
+                    h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].debt)} Token`)
+                ]),
+                state.ethPrice !== null && state.tokenPrice !== null ?
+                    h('div', { className: 'columns' }, [
+                        h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Collateral Value'),
+                        h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].collateral.mul(state.ethPrice))}`),
+                        h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Debt Value'),
+                        h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].debt.mul(state.tokenPrice))}`)
+                    ]) :
+                    [],
                 h('div', {}, [
                     h('input', { type: 'text', className: `input space-bottom ${state.amountText === '' || isAmountTextValid() ? '' : 'is-danger'}`, placeholder: 'amount', value: state.amountText, oninput: amountTextChange }),
                     h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
