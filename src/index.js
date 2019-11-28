@@ -230,46 +230,51 @@ function vaultInfo(vault) {
 }
 
 function render() {
-    return h('div', {}, [
-        state.message !== null ?
-            h('div', {}, state.message) :
-            [],
-        h('div', {}, [
-            state.signer === null ?
-            h('button', { onclick: connect }, 'Connect') :
-            [
-                h('div', {}, 'Connected to wallet'),
-                h('div', {},  state.address !== null ? state.address : 'Loading address...')
-            ]
-        ]),
-        state.signer !== null ?
+    return h('div', { className: 'container' }, [
+        h('section', { className: 'section' },
+            h('div', { className: 'container' }, 
+                [
+                    state.message !== null ?
+                        h('p', { className: 'has-text-danger' }, state.message) :
+                        [],
+                    state.signer === null ?
+                        h('button', { className: 'button', onclick: connect }, 'Connect') :
+                        [
+                            h('p', {}, 'Connected to wallet'),
+                            h('p', {},  state.address !== null ? state.address : 'Loading address...')
+                        ]
+                ]
+            )
+        ),
+        h('section', { className: 'section' },  state.signer !== null ?
             [
                 state.ethBalance !== null && state.tokenBalance !== null ?
-                    h('div', {}, `Balance: ${ethers.utils.formatEther(state.ethBalance)}, ${ethers.utils.formatEther(state.tokenBalance)}`) :
+                    h('p', {}, `Balance: ${ethers.utils.formatEther(state.ethBalance)}, ${ethers.utils.formatEther(state.tokenBalance)}`) :
                     [],
-                h('button', { onclick: createVault }, 'Create Vault'),
+                h('button', { className: 'button', onclick: createVault }, 'Create Vault'),
                 state.selectedVaultIndex !== null ?
                     [
-                        h('div', {}, `Selected vault: ${vaultInfo(state.vaults[state.selectedVaultIndex])}`),
+                        h('p', {}, `Selected vault: ${vaultInfo(state.vaults[state.selectedVaultIndex])}`),
                         h('div', {}, [
-                            h('input', { type: 'text', value: state.amountText, onchange: amountTextChange }),
-                            h('button', { onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
-                            h('button', { onclick: () => withdraw(state.selectedVaultIndex) }, 'Withdraw ETH'),
-                            h('button', { onclick: () => payBack(state.selectedVaultIndex) }, 'Pay back token debt'),
-                            h('button', { onclick: () => borrow(state.selectedVaultIndex) }, 'Borrow token')
+                            h('input', { type: 'text', className: 'input', placeholder: 'amount', value: state.amountText, onchange: amountTextChange }),
+                            h('button', { className: 'button', onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
+                            h('button', { className: 'button', onclick: () => withdraw(state.selectedVaultIndex) }, 'Withdraw ETH'),
+                            h('button', { className: 'button', onclick: () => payBack(state.selectedVaultIndex) }, 'Pay back token debt'),
+                            h('button', { className: 'button', onclick: () => borrow(state.selectedVaultIndex) }, 'Borrow token')
                         ]),
                     ] :
                     [],
             ] :
-            [],
-        state.vaults.map((vault, index) => h('div', {}, [
+            []
+        ),
+        h('section', { className: 'section' }, state.vaults.map((vault, index) => h('div', { className: 'box' }, [
             state.address !== null && vault.owner === state.address ?
                 h('div', {}, [
-                    vaultInfo(vault),
-                    h('button', { onclick: () => selectVault(index) }, 'Select')
+                    h('p', {} , vaultInfo(vault)),
+                    h('button', { className: 'button', onclick: () => selectVault(index) }, 'Select')
                 ]) :
-                h('div', {}, vaultInfo(vault))
-        ]))
+                h('p', {}, vaultInfo(vault))
+        ])))
     ]);
 }
 
