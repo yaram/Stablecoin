@@ -32,12 +32,14 @@ ganache.server().listen(8545, (err, blockchain) => {
                 ]);
             })
             .then(([ethPriceSource, tokenPriceSource]) => {
-                return stablecoinFactory.deploy(ethPriceSource.address, tokenPriceSource.address, 150, "Test", "TEST");
+                return stablecoinFactory.deploy(ethPriceSource.address, tokenPriceSource.address, 150, 'Test', 'TEST');
             })
             .then(stablecoin => {
                 console.log(`Primary contract deployed at ${stablecoin.address}`);
 
                 process.env.CONTRACT_ADDRESS = stablecoin.address;
+                process.env.TOKEN_SYMBOL = 'TEST';
+                process.env.TARGET_SYMBOL = 'USD';
 
                 const bundler = new Bundler('src/index.html');
 

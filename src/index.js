@@ -3,11 +3,17 @@ import { ethers } from 'ethers';
 import Stablecoin from '../build/Stablecoin.json';
 import PriceSource from '../build/PriceSource.json';
 
+const environment = process.env.NODE_ENV == null ? 'development' : process.env.NODE_ENV;
+const contract_address = process.env.CONTRACT_ADDRESS;
+const network = process.env.NETWORK;
+const token_symbol = process.env.TOKEN_SYMBOL;
+const target_symbol = process.env.TARGET_SYMBOL;
+
 async function connect() {
     state.walletError = null;
     update();
 
-    if(process.env.NODE_ENV === 'production') {
+    if(environment === 'production') {
         if(window.ethereum) {
                 try {
                     const addresses = await window.ethereum.enable();
@@ -83,7 +89,7 @@ async function loadVaults() {
     state.selectedVaultIndex = null;
     update();
 
-    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.provider);
+    const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.provider);
 
     const vaultCount = await contract.vaultCount();
 
@@ -115,7 +121,7 @@ async function loadVaults() {
 }
 
 async function loadPrices() {
-    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.provider);
+    const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.provider);
 
     const ethPriceSourceAddress = await contract.ethPriceSource();
     const ethPriceSource = new ethers.Contract(ethPriceSourceAddress, PriceSource.abi, state.provider);
@@ -134,7 +140,7 @@ async function loadPrices() {
 async function loadBalances() {
     const ethBalance = await state.provider.getBalance(state.address);
 
-    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.signer);
+    const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
     const tokenBalance = await contract.balanceOf(state.address);
     
@@ -144,7 +150,7 @@ async function loadBalances() {
 }
 
 async function createVault() {
-    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.signer);
+    const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
     await contract.createVault();
 
@@ -181,7 +187,7 @@ async function deposit(index) {
         return;
     }
 
-    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.signer);
+    const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
     await contract.depositCollateral(state.vaults[index].id, { value: amount });
 
@@ -198,7 +204,7 @@ async function withdraw(index) {
         return;
     }
 
-    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.signer);
+    const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
     await contract.withdrawCollateral(state.vaults[index].id, amount);
 
@@ -215,7 +221,7 @@ async function payBack(index) {
         return;
     }
 
-    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.signer);
+    const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
     await contract.payBackToken(state.vaults[index].id, amount);
 
@@ -232,7 +238,7 @@ async function borrow(index) {
         return;
     }
 
-    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, Stablecoin.abi, state.signer);
+    const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
     await contract.borrowToken(state.vaults[index].id, amount);
 
@@ -264,10 +270,10 @@ function render() {
                         h('p', {},  state.address !== null ? state.address : 'Loading address...'),
                     h('div', {}, [
                         state.ethBalance !== null && state.tokenBalance !== null ?
-                            h('p', {}, `Balance: ${ethers.utils.formatEther(state.ethBalance)} ETH, ${ethers.utils.formatEther(state.tokenBalance)} Token`) :
+                            h('p', {}, `Balance: ${ethers.utils.formatEther(state.ethBalance)} ETH, ${ethers.utils.formatEther(state.tokenBalance)} ${token_symbol}`) :
                             [],
                         state.ethPrice !== null && state.tokenPrice !== null ?
-                            h('p', {}, `ETH price: ${ethers.utils.formatEther(state.ethPrice)}, Token price: ${ethers.utils.formatEther(state.tokenPrice)}`) :
+                            h('p', {}, `ETH price: ${ethers.utils.formatEther(state.ethPrice)} ${target_symbol}, ${token_symbol} price: ${ethers.utils.formatEther(state.tokenPrice)} ${target_symbol}`) :
                             []
                     ])
                 ]),
@@ -283,22 +289,22 @@ function render() {
                     h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Collateral'),
                     h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].collateral)} ETH`),
                     h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Debt'),
-                    h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].debt)} Token`)
+                    h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].debt)} ${token_symbol}`)
                 ]),
                 state.ethPrice !== null && state.tokenPrice !== null ?
                     h('div', { className: 'columns' }, [
                         h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Collateral Value'),
-                        h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].collateral.mul(state.ethPrice))}`),
+                        h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].collateral.mul(state.ethPrice))} ${target_symbol}`),
                         h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Debt Value'),
-                        h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].debt.mul(state.tokenPrice))}`)
+                        h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].debt.mul(state.tokenPrice))} ${target_symbol}`)
                     ]) :
                     [],
                 h('div', {}, [
                     h('input', { type: 'text', className: `input space-bottom ${state.amountText === '' || isAmountTextValid() ? '' : 'is-danger'}`, placeholder: 'amount', value: state.amountText, oninput: amountTextChange }),
                     h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
                     h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => withdraw(state.selectedVaultIndex) }, 'Withdraw ETH'),
-                    h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => payBack(state.selectedVaultIndex) }, 'Pay back token debt'),
-                    h('button', { className: 'button', disabled: !isAmountTextValid(), onclick: () => borrow(state.selectedVaultIndex) }, 'Borrow token')
+                    h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => payBack(state.selectedVaultIndex) }, `Pay back ${token_symbol} debt`),
+                    h('button', { className: 'button', disabled: !isAmountTextValid(), onclick: () => borrow(state.selectedVaultIndex) }, `Borrow ${token_symbol}`)
                 ]),
             ]) :
             [],
@@ -332,7 +338,7 @@ function render() {
 
 let state = {
     walletError: null,
-    provider: process.env.NODE_ENV === 'production' ? ethers.getDefaultProvider(process.env.NETWORK) : new ethers.providers.JsonRpcProvider('http://localhost:8545'),
+    provider: environment === 'production' ? ethers.getDefaultProvider(network) : new ethers.providers.JsonRpcProvider('http://localhost:8545'),
     signer: null,
     address: null,
     loadingVaults: false,
