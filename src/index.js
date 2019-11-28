@@ -150,6 +150,7 @@ async function createVault() {
 
     loadVaults();
     loadPrices();
+    loadBalances();
 }
 
 function amountTextChange(e) {
