@@ -24,15 +24,15 @@ ganache.server().listen(8545, (err, blockchain) => {
         const stablecoinFactory = ethers.ContractFactory.fromSolidity(Stablecoin, wallet);
         const constantPriceSourceFactory = ethers.ContractFactory.fromSolidity(ConstantPriceSource, wallet);
 
-        constantPriceSourceFactory.deploy(100)
+        constantPriceSourceFactory.deploy(ethers.utils.parseEther('100'))
             .then(ethPriceSource => {
                 return Promise.all([
                     ethPriceSource,
-                    constantPriceSourceFactory.deploy(1)
+                    constantPriceSourceFactory.deploy(ethers.utils.parseEther('1'))
                 ]);
             })
             .then(([ethPriceSource, tokenPriceSource]) => {
-                return stablecoinFactory.deploy(ethPriceSource.address, tokenPriceSource.address, 150, "Test", "TEST", 18);
+                return stablecoinFactory.deploy(ethPriceSource.address, tokenPriceSource.address, 150, "Test", "TEST");
             })
             .then(stablecoin => {
                 console.log(`Primary contract deployed at ${stablecoin.address}`);
