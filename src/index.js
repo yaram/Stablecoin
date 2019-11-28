@@ -153,6 +153,11 @@ async function createVault() {
     loadBalances();
 }
 
+function onlyOwnedVaultsChange(e) {
+    state.onlyOwnedVaults = e.target.checked;
+    update();
+}
+
 function amountTextChange(e) {
     state.amountText = e.target.value;
     update();
@@ -280,17 +285,28 @@ function render() {
             [],
         h('section', { className: 'section' }, [
             state.address !== null ?
-                h('button', { className: 'button space-bottom', onclick: createVault }, 'Create Vault') :
+                h('div', { className: 'level space-bottom'},
+                    h('div', { className: 'level-left' }, [
+                        h('button', { className: 'button space-right', onclick: createVault }, 'Create Vault'),
+                        h('label', { className: 'checkbox' }, [
+                            h('input', { type: 'checkbox', checked: state.onlyOwnedVaults, onchange: onlyOwnedVaultsChange }),
+                            ' Only my vaults'
+                        ])
+                    ])
+                ) :
                 [],
-            state.vaults.map((vault, index) => h('div', { className: 'box' },
-                    state.address !== null && vault.owner === state.address ?
-                        h('div', {}, [
-                            h('p', {} , vaultInfo(vault)),
-                            h('button', { className: 'button', disabled: state.selectedVaultIndex === index, onclick: () => selectVault(index) }, 'Select')
-                        ]) :
-                        h('p', {}, vaultInfo(vault))
-                )
-            )
+            state.vaults.reduce((list, vault, index) => {
+                if(state.address === null || !state.onlyOwnedVaults || vault.owner == state.address) {
+                    list.push(h('div', { className: 'box' }, [
+                        h('p', {}, vaultInfo(vault)),
+                        state.address !== null && vault.owner === state.address ?
+                            h('button', { className: 'button', disabled: state.selectedVaultIndex === index, onclick: () => selectVault(index) }, 'Select') :
+                            []
+                    ]));
+                }
+
+                return list;
+            }, [])
         ])
     ]);
 }
@@ -301,6 +317,7 @@ let state = {
     signer: null,
     address: null,
     loadingVaults: false,
+    onlyOwnedVaults: true,
     vaults: [],
     selectedVaultIndex: null,
     amountText: '',
