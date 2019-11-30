@@ -1,4 +1,3 @@
-const crypto = require('crypto');
 const ganache = require('ganache-core');
 const Bundler = require('parcel-bundler');
 const ethers = require('ethers');
