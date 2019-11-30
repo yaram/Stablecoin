@@ -11,8 +11,8 @@ describe('Stablecoin smart contract', () => {
     const [firstWallet, secondWallet] = getWallets(provider);
 
     async function deployContracts() {
-        const ethPriceSource = await deployContract(firstWallet, TestPriceSource, [100]);
-        const tokenPriceSource = await deployContract(firstWallet, TestPriceSource, [10]);
+        const ethPriceSource = await deployContract(firstWallet, TestPriceSource, [ethers.utils.parseEther('100')]);
+        const tokenPriceSource = await deployContract(firstWallet, TestPriceSource, [ethers.utils.parseEther('10')]);
 
         const stablecoin = await deployContract(firstWallet, TestStablecoin, [
             ethPriceSource.address,
@@ -137,14 +137,18 @@ describe('Stablecoin smart contract', () => {
 
         await stablecoin.borrowToken(0, ethers.utils.parseEther('0.001'));
 
-        await ethPriceSource.setPrice(ethers.utils.parseEther('0.000001'));
+        await ethPriceSource.setPrice(ethers.utils.parseEther('0.0001'));
 
         const beforeBalance = await stablecoin.balanceOf(secondWallet.address);
+        const beforeDebt = await stablecoin.vaultDebt(0);
 
         await stablecoin.connect(secondWallet).buyRiskyVault(0);
 
+        const afterBalance = await stablecoin.balanceOf(secondWallet.address);
+        const afterDebt = await stablecoin.vaultDebt(0);
+
         expect(await stablecoin.vaultOwner(0)).to.equal(secondWallet.address);
-        expect(await stablecoin.vaultDebt(0)).to.equal(0);
-        expect(await stablecoin.balanceOf(secondWallet.address)).to.be.lessThan(beforeBalance);
+        expect(afterBalance.lt(beforeBalance)).to.be.true;
+        expect(afterDebt.lt(beforeDebt)).to.be.true;
     });
 });
