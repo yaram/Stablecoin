@@ -8,7 +8,8 @@
     "build:app": "parcel build src/index.html",
     "build": "npm run build:contracts & npm run build:app",
     "start:dev": "npm run build:contracts & node devStart.js",
-    "start": "parcel serve src/index.html"
+    "start": "parcel serve src/index.html",
+    "test": "mocha"
   },
   "devDependencies": {
     "@babel/core": "^7.7.2",
@@ -16,8 +17,10 @@
     "@babel/preset-env": "^7.7.1",
     "@openzeppelin/contracts": "^2.4.0",
     "bulma": "^0.8.0",
+    "chai": "^4.2.0",
     "ethereum-waffle": "^2.1.0",
     "ganache-core": "^2.8.0",
+    "mocha": "^6.2.2",
     "parcel-bundler": "^1.12.4",
     "sass": "^1.23.7"
   },
