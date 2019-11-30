@@ -253,11 +253,20 @@ function selectVault(index) {
 }
 
 function vaultInfo(vault) {
+    let result = `${vault.id} (${vault.owner}): ${ethers.utils.formatEther(vault.debt)}/${ethers.utils.formatEther(vault.collateral)}`;
+
     if(state.ethPrice !== null && state.tokenPrice !== null) {
-        return `${vault.id} (${vault.owner}): ${ethers.utils.formatEther(vault.debt)}/${ethers.utils.formatEther(vault.collateral)} (${ethers.utils.formatEther(vault.debt.mul(state.tokenPrice))}/${ethers.utils.formatEther(vault.collateral.mul(state.ethPrice))})`;
-    } else {
-        return `${vault.id} (${vault.owner}): ${ethers.utils.formatEther(vault.debt)}/${ethers.utils.formatEther(vault.collateral)}`;
+        const debtValue = vault.debt.mul(state.tokenPrice).div(ethers.utils.parseEther('1'));
+        const collateralValue = vault.collateral.mul(state.ethPrice).div(ethers.utils.parseEther('1'));
+
+        result += ` (${ethers.utils.formatEther(debtValue)}/${ethers.utils.formatEther(collateralValue)})`;
+
+        if(debtValue != 0) {
+            result += ` ${collateralValue.mul(100).div(debtValue)}%`;
+        }
     }
+
+    return result;
 }
 
 function render() {
