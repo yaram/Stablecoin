@@ -44,109 +44,107 @@ describe('Stablecoin smart contract', () => {
     it('can create a new vault', async () => {
         const [ethPriceSource, tokenPriceSource, stablecoin] = await deployContracts();
 
-        const id = (await stablecoin.createVault()).value;
+        await stablecoin.createVault();
 
-        expect(id).to.equal(0);
-
-        expect(await stablecoin.vaultExistance(id)).to.be.true;
-        expect(await stablecoin.vaultOwner(id)).to.equal(firstWallet.address);
-        expect(await stablecoin.vaultCollateral(id)).to.equal(0);
-        expect(await stablecoin.vaultDebt(id)).to.equal(0);
+        expect(await stablecoin.vaultExistance(0)).to.be.true;
+        expect(await stablecoin.vaultOwner(0)).to.equal(firstWallet.address);
+        expect(await stablecoin.vaultCollateral(0)).to.equal(0);
+        expect(await stablecoin.vaultDebt(0)).to.equal(0);
     });
 
     it('can deposit collateral in a vault', async () => {
         const [ethPriceSource, tokenPriceSource, stablecoin] = await deployContracts();
 
-        const id = (await stablecoin.createVault()).value;
+        await stablecoin.createVault();
 
         const amount = ethers.utils.parseEther('0.1');
 
         const beforeBalance = await firstWallet.getBalance();
 
-        const transaction = await stablecoin.depositCollateral(id, { value: amount });
+        const transaction = await stablecoin.depositCollateral(0, { value: amount });
 
         const receipt = await transaction.wait();
 
         const fee = receipt.gasUsed.mul(transaction.gasPrice);
 
-        expect(await stablecoin.vaultCollateral(id)).to.equal(amount);
+        expect(await stablecoin.vaultCollateral(0)).to.equal(amount);
         expect(await firstWallet.getBalance()).to.equal(beforeBalance.sub(amount).sub(fee));
     });
 
     it('can borrow token debt on a vault', async () => {
         const [ethPriceSource, tokenPriceSource, stablecoin] = await deployContracts();
 
-        const id = (await stablecoin.createVault()).value;
+        await stablecoin.createVault();
 
-        await stablecoin.depositCollateral(id, { value: ethers.utils.parseEther('0.1') });
+        await stablecoin.depositCollateral(0, { value: ethers.utils.parseEther('0.1') });
 
         const amount = ethers.utils.parseEther('0.001');
 
         const beforeBalance = await stablecoin.balanceOf(firstWallet.address);
 
-        await stablecoin.borrowToken(id, amount);
+        await stablecoin.borrowToken(0, amount);
 
-        expect(await stablecoin.vaultDebt(id)).to.equal(amount);
+        expect(await stablecoin.vaultDebt(0)).to.equal(amount);
         expect(await stablecoin.balanceOf(firstWallet.address)).to.equal(beforeBalance.add(amount));
     });
 
     it('can withdraw collateral from a vault', async () => {
         const [ethPriceSource, tokenPriceSource, stablecoin] = await deployContracts();
 
-        const id = (await stablecoin.createVault()).value;
+        await stablecoin.createVault();
 
         const amount = ethers.utils.parseEther('0.1');
 
-        await stablecoin.depositCollateral(id, { value: amount });
+        await stablecoin.depositCollateral(0, { value: amount });
 
         const beforeBalance = await firstWallet.getBalance();
 
-        const transaction = await stablecoin.withdrawCollateral(id, amount);
+        const transaction = await stablecoin.withdrawCollateral(0, amount);
 
         const receipt = await transaction.wait();
 
         const fee = receipt.gasUsed.mul(transaction.gasPrice);
 
-        expect(await stablecoin.vaultCollateral(id)).to.equal(0);
+        expect(await stablecoin.vaultCollateral(0)).to.equal(0);
         expect(await firstWallet.getBalance()).to.equal(beforeBalance.add(amount).sub(fee));
     });
 
     it('can pay back token debt on a vault', async () => {
         const [ethPriceSource, tokenPriceSource, stablecoin] = await deployContracts();
 
-        const id = (await stablecoin.createVault()).value;
+        await stablecoin.createVault();
 
-        await stablecoin.depositCollateral(id, { value: ethers.utils.parseEther('0.1') });
+        await stablecoin.depositCollateral(0, { value: ethers.utils.parseEther('0.1') });
 
         const amount = ethers.utils.parseEther('0.001');
 
-        await stablecoin.borrowToken(id, amount);
+        await stablecoin.borrowToken(0, amount);
 
         const beforeBalance = await stablecoin.balanceOf(firstWallet.address);
 
-        await stablecoin.payBackToken(id, amount);
+        await stablecoin.payBackToken(0, amount);
 
-        expect(await stablecoin.vaultDebt(id)).to.equal(0);
+        expect(await stablecoin.vaultDebt(0)).to.equal(0);
         expect(await stablecoin.balanceOf(firstWallet.address)).to.equal(beforeBalance.sub(amount));
     });
 
     it('can buy a risky vault', async () => {
         const [ethPriceSource, tokenPriceSource, stablecoin] = await deployContracts();
 
-        const id = (await stablecoin.createVault()).value;
+        await stablecoin.createVault();
 
-        await stablecoin.depositCollateral(id, { value: ethers.utils.parseEther('0.1') });
+        await stablecoin.depositCollateral(0, { value: ethers.utils.parseEther('0.1') });
 
-        await stablecoin.borrowToken(id, ethers.utils.parseEther('0.001'));
+        await stablecoin.borrowToken(0, ethers.utils.parseEther('0.001'));
 
         await ethPriceSource.setPrice(ethers.utils.parseEther('0.000001'));
 
         const beforeBalance = await stablecoin.balanceOf(secondWallet.address);
 
-        await stablecoin.connect(secondWallet).buyRiskyVault(id);
+        await stablecoin.connect(secondWallet).buyRiskyVault(0);
 
-        expect(await stablecoin.vaultOwner(id)).to.equal(secondWallet.address);
-        expect(await stablecoin.vaultDebt(id)).to.equal(0);
+        expect(await stablecoin.vaultOwner(0)).to.equal(secondWallet.address);
+        expect(await stablecoin.vaultDebt(0)).to.equal(0);
         expect(await stablecoin.balanceOf(secondWallet.address)).to.be.lessThan(beforeBalance);
     });
 });
