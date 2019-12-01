@@ -10,9 +10,9 @@ CDPs are called Vaults here, the term being stolen from Multi-Collateral Dai.
 ## Ropsten
 Uses the ropsten Chainlink ETH/USD price oracle aggergator
 
-App: stablecoin-ropsten.netlify.com
+App: [stablecoin-ropsten.netlify.com](https://stablecoin-ropsten.netlify.com)
 
-Stablecoin contract: 0x447F788dD70A3de40296B3548d78aE3FaA0ed504
+Stablecoin contract: [0x447F788dD70A3de40296B3548d78aE3FaA0ed504](https://ropsten.etherscan.io/address/0x447F788dD70A3de40296B3548d78aE3FaA0ed504)
 
 # Local development
 ```
