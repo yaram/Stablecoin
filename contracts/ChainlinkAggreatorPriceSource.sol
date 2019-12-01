@@ -1,6 +1,10 @@
 pragma solidity ^0.5.2;
 
-import "chainlink/contracts/interfaces/AggregatorInterface.sol";
+interface AggregatorInterface {
+    function currentAnswer() external view returns (int256);
+    function updatedHeight() external view returns (uint256);
+}
+
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "./PriceSource.sol";
 
