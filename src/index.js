@@ -501,9 +501,9 @@ function selectedVaultDisplay() {
             ])
         ),
         h('div', { className: 'columns' }, [
-            h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Collateral'),
+            h('div', { className: 'column has-text-right-not-mobile has-text-weight-bold' }, 'Collateral'),
             h('div', { className: 'column' }, `${ethers.utils.formatEther(vault.collateral)} ETH`),
-            h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Debt'),
+            h('div', { className: 'column has-text-right-not-mobile has-text-weight-bold' }, 'Debt'),
             h('div', { className: 'column' }, `${ethers.utils.formatEther(vault.debt)} ${token_symbol}`)
         ]),
     );
@@ -514,9 +514,9 @@ function selectedVaultDisplay() {
 
         parts.push(
             h('div', { className: 'columns' }, [
-                h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Collateral Value'),
+                h('div', { className: 'column has-text-right-not-mobile has-text-weight-bold' }, 'Collateral Value'),
                 h('div', { className: 'column' }, `${ethers.utils.formatEther(collateralValueBig.div(ethers.constants.WeiPerEther))} ${target_symbol}`),
-                h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Debt Value'),
+                h('div', { className: 'column has-text-right-not-mobile has-text-weight-bold' }, 'Debt Value'),
                 h('div', { className: 'column' }, `${ethers.utils.formatEther(debtValueBig.div(ethers.constants.WeiPerEther))} ${target_symbol}`)
             ]),
         );
@@ -552,9 +552,9 @@ function selectedVaultDisplay() {
 
         parts.push(
             h('div', { className: 'columns' }, [
-                h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Collateral to Debt Ratio'),
+                h('div', { className: 'column has-text-right-not-mobile has-text-weight-bold' }, 'Collateral to Debt Ratio'),
                 debtRatioDisplay,
-                h('div', { className: 'column has-text-right has-text-weight-bold' }, debtDifferenceLabel),
+                h('div', { className: 'column has-text-right-not-mobile has-text-weight-bold' }, debtDifferenceLabel),
                 h('div', { className: 'column' }, `${debtDifferenceText} ${token_symbol}`)
             ])
         );
@@ -769,9 +769,13 @@ function render() {
             h('section', { className: 'section' },
                 h('div', { className: 'container' }, 
                     h('div', { className: 'level' }, [
-                        state.address === null ?
-                            h('button', { className: 'button level-left', onclick: connect }, 'Connect') :
-                            h('p', { className: 'level-left' },  state.address !== null ? state.address : 'Loading address...'),
+                        h('div', { className: 'level-left' },
+                            h('div', { className: 'level-item'},
+                                state.address === null ?
+                                    h('button', { className: 'button', onclick: connect }, 'Connect') :
+                                    h('p', {},  state.address !== null ? state.address : 'Loading address...')
+                            )
+                        ),
                         h('div', { className: 'level-right'},
                             h('div', { className: 'level-item'}, [
                                 h('div', { className: 'balance-price' }, [
@@ -798,7 +802,9 @@ function render() {
                 state.address !== null ?
                     h('div', { className: 'level space-bottom'},
                         h('div', { className: 'level-left' }, [
-                            h('button', { className: 'button space-right level-item', disabled: state.transactionHash !== null, onclick: createVault }, 'Create Vault'),
+                            h('div', { className: 'level-item' },
+                                h('button', { className: 'button space-right', disabled: state.transactionHash !== null, onclick: createVault }, 'Create Vault')
+                            ),
                             h('div', { className: 'level-item' },
                                 h('label', { className: 'checkbox' }, [
                                     h('input', { type: 'checkbox', checked: state.onlyOwnedVaults, onchange: onlyOwnedVaultsChange }),

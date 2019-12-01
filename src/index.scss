@@ -16,6 +16,12 @@
     margin: 0 $block-spacing 0 0 !important;
 }
 
+.has-text-right-not-mobile  {
+    @include tablet {
+        text-align: right !important;
+    }
+}
+
 .balance-price {
     display: flex;
     flex-direction: column;
