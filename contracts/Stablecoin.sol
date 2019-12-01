@@ -17,6 +17,15 @@ contract Stablecoin is ERC20, ERC20Detailed {
     mapping(uint256 => uint256) public vaultCollateral;
     mapping(uint256 => uint256) public vaultDebt;
 
+    event CreateVault(uint256 vaultID, address creator);
+    event DestroyVault(uint256 vaultID);
+    event TransferVault(uint256 vaultID, address from, address to);
+    event DepositCollateral(uint256 vaultID, uint256 amount);
+    event WithdrawCollateral(uint256 vaultID, uint256 amount);
+    event BorrowToken(uint256 vaultID, uint256 amount);
+    event PayBackToken(uint256 vaultID, uint256 amount);
+    event BuyRiskyVault(uint256 vaultID, address owner, address buyer, uint256 amountPayed);
+
     constructor(
         address ethPriceSourceAddress,
         address tokenPriceSourceAddress,
@@ -75,6 +84,8 @@ contract Stablecoin is ERC20, ERC20Detailed {
         vaultExistance[id] = true;
         vaultOwner[id] = msg.sender;
 
+        emit CreateVault(id, msg.sender);
+
         return id;
     }
 
@@ -89,10 +100,14 @@ contract Stablecoin is ERC20, ERC20Detailed {
         delete vaultOwner[vaultID];
         delete vaultCollateral[vaultID];
         delete vaultDebt[vaultID];
+
+        emit DestroyVault(vaultID);
     }
 
     function transferVault(uint256 vaultID, address to) external onlyVaultOwner(vaultID) {
         vaultOwner[vaultID] = to;
+
+        emit TransferVault(vaultID, msg.sender, to);
     }
 
     function depositCollateral(uint256 vaultID) external payable onlyVaultOwner(vaultID) {
@@ -101,6 +116,8 @@ contract Stablecoin is ERC20, ERC20Detailed {
         assert(newCollateral >= vaultCollateral[vaultID]);
 
         vaultCollateral[vaultID] = newCollateral;
+
+        emit DepositCollateral(vaultID, msg.value);
     }
 
     function withdrawCollateral(uint256 vaultID, uint256 amount) external onlyVaultOwner(vaultID) {
@@ -114,6 +131,8 @@ contract Stablecoin is ERC20, ERC20Detailed {
 
         vaultCollateral[vaultID] = newCollateral;
         msg.sender.transfer(amount);
+
+        emit WithdrawCollateral(vaultID, amount);
     }
 
     function borrowToken(uint256 vaultID, uint256 amount) external onlyVaultOwner(vaultID) {
@@ -127,6 +146,8 @@ contract Stablecoin is ERC20, ERC20Detailed {
 
         vaultDebt[vaultID] = newDebt;
         _mint(msg.sender, amount);
+
+        emit BorrowToken(vaultID, amount);
     }
 
     function payBackToken(uint256 vaultID, uint256 amount) external onlyVaultOwner(vaultID) {
@@ -135,6 +156,8 @@ contract Stablecoin is ERC20, ERC20Detailed {
 
         vaultDebt[vaultID] -= amount;
         _burn(msg.sender, amount);
+
+        emit PayBackToken(vaultID, amount);
     }
 
     function buyRiskyVault(uint256 vaultID) external {
@@ -154,8 +177,12 @@ contract Stablecoin is ERC20, ERC20Detailed {
 
         require(balanceOf(msg.sender) >= debtDifference, "Token balance too low to pay off outstanding debt");
 
+        address previousOwner = vaultOwner[vaultID];
+
         vaultOwner[vaultID] = msg.sender;
         vaultDebt[vaultID] = maximumDebt;
         _burn(msg.sender, debtDifference);
+
+        emit BuyRiskyVault(vaultID, previousOwner, msg.sender, debtDifference);
     }
 }
