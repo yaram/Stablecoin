@@ -1,8 +1,9 @@
 pragma solidity ^0.5.2;
 
+import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "./Stablecoin.sol";
 
-contract TestStablecoin is Stablecoin {
+contract TestStablecoin is Stablecoin, Ownable {
     constructor(
         address ethPriceSourceAddress,
         address tokenPriceSourceAddress,
@@ -19,7 +20,11 @@ contract TestStablecoin is Stablecoin {
 
     }
 
-    function mint(address account, uint256 amount) external {
+    function mint(address account, uint256 amount) external onlyOwner() {
         _mint(account, amount);
+    }
+
+    function burn(address account, uint256 amount) external onlyOwner() {
+        _burn(account, amount);
     }
 }

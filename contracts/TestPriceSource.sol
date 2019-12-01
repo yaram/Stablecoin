@@ -1,8 +1,9 @@
 pragma solidity ^0.5.2;
 
+import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "./PriceSource.sol";
 
-contract TestPriceSource is PriceSource {
+contract TestPriceSource is PriceSource, Ownable {
     uint256 private _price;
 
     constructor(uint256 price) public {
@@ -13,7 +14,7 @@ contract TestPriceSource is PriceSource {
         return _price;
     }
 
-    function setPrice(uint256 price) external {
+    function setPrice(uint256 price) external onlyOwner() {
         uint256 oldPrice = _price;
 
         _price = price;
