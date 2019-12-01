@@ -313,10 +313,10 @@ function selectedVaultDisplay() {
         let debtDifferenceLabel;
         let debtDifferenceText;
         if(debtDifference.gte(0)) {
-            debtDifferenceLabel = 'Available to borrow';
+            debtDifferenceLabel = 'Available to Borrow';
             debtDifferenceText = ethers.utils.formatEther(debtDifference);
         } else {
-            debtDifferenceLabel = 'Needed to buy';
+            debtDifferenceLabel = 'Needed to Pay Back';
             debtDifferenceText = ethers.utils.formatEther(ethers.constants.Zero.sub(debtDifference));
         }
 
