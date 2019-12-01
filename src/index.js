@@ -160,6 +160,15 @@ async function createVault() {
     loadBalances();
 }
 
+function calculateCollateralPercentage(collateral, debt) {
+    const collateralValueBig = collateral.mul(state.ethPrice);
+    const debtValueBig = debt.mul(state.tokenPrice);
+
+    const collateralPercentage = collateralValueBig.mul(100).div(debtValueBig);
+
+    return collateralPercentage;
+}
+
 function onlyOwnedVaultsChange(e) {
     state.onlyOwnedVaults = e.target.checked;
     update();
@@ -168,16 +177,6 @@ function onlyOwnedVaultsChange(e) {
 function amountTextChange(e) {
     state.amountText = e.target.value;
     update();
-}
-
-function isAmountTextValid() {
-    try {
-        ethers.utils.parseEther(state.amountText.trim());
-
-        return true;
-    } catch(err) {
-        return false;
-    }
 }
 
 async function deposit(index) {
@@ -263,6 +262,11 @@ function selectVault(index) {
     update();
 }
 
+function changeTab(tab) {
+    state.tab = tab;
+    update();
+}
+
 function selectedVaultDisplay() {
     const vault = state.vaults[state.selectedVaultIndex];
 
@@ -338,14 +342,133 @@ function selectedVaultDisplay() {
     if(state.address !== null) {
         if(vault.owner === state.address) {
             parts.push(
-                h('div', {}, [
-                    h('input', { type: 'text', className: `input space-bottom ${state.amountText === '' || isAmountTextValid() ? '' : 'is-danger'}`, placeholder: 'amount', value: state.amountText, oninput: amountTextChange }),
-                    h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
-                    h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => withdraw(state.selectedVaultIndex) }, 'Withdraw ETH'),
-                    h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => payBack(state.selectedVaultIndex) }, `Pay back ${token_symbol} debt`),
-                    h('button', { className: 'button', disabled: !isAmountTextValid(), onclick: () => borrow(state.selectedVaultIndex) }, `Borrow ${token_symbol}`)
+                h('div', { className: 'tabs' }, [
+                    h('ul', {}, [
+                        h('li', { className: state.tab === 'deposit' ? 'is-active' : null, onclick: () => changeTab('deposit') }, h('a', {}, 'Deposit')),
+                        h('li', { className: state.tab === 'withdraw' ? 'is-active' : null, onclick: () => changeTab('withdraw')  }, h('a', {}, 'Withdraw')),
+                        h('li', { className: state.tab === 'borrow' ? 'is-active' : null, onclick: () => changeTab('borrow')  }, h('a', {}, 'Borrow')),
+                        h('li', { className: state.tab === 'payBack' ? 'is-active' : null, onclick: () => changeTab('payBack')  }, h('a', {}, 'Pay Back'))
+                    ])
                 ])
             );
+
+            if(state.tab === 'deposit') {
+                let isAmountTextValid = true;
+                try {
+                    const amount = ethers.utils.parseEther(state.amountText.trim());
+
+                    if(amount.gt(0)) {
+                        if(state.ethBalance !== null && amount.gt(state.ethBalance)) {
+                            isAmountTextValid = false;
+                        }
+                    } else {
+                        isAmountTextValid = false;
+                    }
+                } catch(err) {
+                    isAmountTextValid = false;
+                }
+
+                parts.push(
+                    h('input', {
+                        type: 'text',
+                        className: `input space-bottom ${state.amountText === '' || isAmountTextValid ? '' : 'is-danger'}`,
+                        placeholder: 'amount of ETH to deposit',
+                        value: state.amountText, oninput: amountTextChange
+                    }),
+                    h('div', {}, [
+                        h('button', { className: 'button', disabled: !isAmountTextValid, onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
+                    ])
+                );
+            } else if(state.tab === 'withdraw') {
+                let isAmountTextValid = true;
+                try {
+                    const amount = ethers.utils.parseEther(state.amountText.trim());
+
+                    if(amount.gt(0) && amount.lte(vault.collateral)) {
+                        if(!vault.debt.eq(0) && state.ethPrice !== null && state.tokenPrice !== null) {
+                            const newCollateralPercentage = calculateCollateralPercentage(vault.collateral.sub(amount), vault.debt);
+
+                            if(newCollateralPercentage.lt(minimum_collateral_percentage)) {
+                                isAmountTextValid = false;
+                            }
+                        }
+                    } else {
+                        isAmountTextValid = false;
+                    }
+                } catch(err) {
+                    isAmountTextValid = false;
+                }
+
+                parts.push(
+                    h('input', {
+                        type: 'text',
+                        className: `input space-bottom ${state.amountText === '' || isAmountTextValid ? '' : 'is-danger'}`,
+                        placeholder: 'amount of ETH to withdraw',
+                        value: state.amountText, oninput: amountTextChange
+                    }),
+                    h('div', {}, [
+                        h('button', { className: 'button', disabled: !isAmountTextValid, onclick: () => withdraw(state.selectedVaultIndex) }, 'Withdraw ETH'),
+                    ])
+                );
+            } else if(state.tab === 'borrow') {
+                let isAmountTextValid = true;
+                try {
+                    const amount = ethers.utils.parseEther(state.amountText.trim());
+
+                    if(amount.gt(0)) {
+                        if(state.ethPrice !== null && state.tokenPrice !== null) {
+                            const newCollateralPercentage = calculateCollateralPercentage(vault.collateral, vault.debt.add(amount));
+
+                            if(newCollateralPercentage.lt(minimum_collateral_percentage)) {
+                                isAmountTextValid = false;
+                            }
+                        }
+                    } else {
+                        isAmountTextValid = false;
+                    }
+                } catch(err) {
+                    isAmountTextValid = false;
+                }
+
+                parts.push(
+                    h('input', {
+                        type: 'text',
+                        className: `input space-bottom ${state.amountText === '' || isAmountTextValid ? '' : 'is-danger'}`,
+                        placeholder: `amount of ${token_symbol} to borrow`,
+                        value: state.amountText, oninput: amountTextChange
+                    }),
+                    h('div', {}, [
+                        h('button', { className: 'button', disabled: !isAmountTextValid, onclick: () => borrow(state.selectedVaultIndex) }, `Borrow ${token_symbol}`),
+                    ])
+                );
+            } else if(state.tab === 'payBack') {
+                let isAmountTextValid = true;
+                try {
+                    const amount = ethers.utils.parseEther(state.amountText.trim());
+
+                    if(amount.gt(0)) {
+                        if(state.tokenBalance !== null && amount.gt(state.tokenBalance)) {
+                            isAmountTextValid = false;
+                        }
+                    } else {
+                        isAmountTextValid = false;
+                    }
+                } catch(err) {
+                    isAmountTextValid = false;
+                }
+
+                parts.push(
+                    h('input', {
+                        type: 'text',
+                        className: `input space-bottom ${state.amountText === '' || isAmountTextValid ? '' : 'is-danger'}`,
+                        placeholder: `amount of ${token_symbol} to pay back`,
+                        value: state.amountText, oninput: amountTextChange
+                    }),
+                    h('div', {}, [
+                        h('button', { className: 'button', disabled: !isAmountTextValid, onclick: () => payBack(state.selectedVaultIndex) }, `Pay Back ${token_symbol}`),
+                    ])
+                );
+            }
         } else if(state.ethPrice !== null && state.tokenPrice !== null) {
             const collateralValueBig = vault.collateral.mul(state.ethPrice);
             const debtValueBig = vault.debt.mul(state.tokenPrice);
@@ -467,6 +590,7 @@ let state = {
     vaults: [],
     selectedVaultIndex: null,
     amountText: '',
+    tab: 'deposit',
     ethPrice: null,
     tokenPrice: null,
     ethBalance: null,
