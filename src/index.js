@@ -469,14 +469,37 @@ function selectedVaultDisplay() {
                     ])
                 );
             }
-        } else if(state.ethPrice !== null && state.tokenPrice !== null) {
-            const collateralValueBig = vault.collateral.mul(state.ethPrice);
-            const debtValueBig = vault.debt.mul(state.tokenPrice);
+        } else {
+            let canBuyRiskyVault = true;
+            if(vault.debt !== 0) {
+                if(state.ethPrice !== null && state.tokenPrice !== null) {
+                    const collateralValueBig = vault.collateral.mul(state.ethPrice);
+                    const debtValueBig = vault.debt.mul(state.tokenPrice);
 
-            const debt_collateral_ratio = collateralValueBig.mul(100).div(debtValueBig);
+                    const collateralPercentage = collateralValueBig.mul(100).div(debtValueBig);
+
+                    if(collateralPercentage.lt(minimum_collateral_percentage)) {
+                        if(state.tokenBalance !== null) {
+                            const maximumDebtValueBig = collateralValueBig.mul(100).div(minimum_collateral_percentage);
+                    
+                            const maximumDebt = maximumDebtValueBig.div(state.tokenPrice);
+                    
+                            const debtDifference = vault.debt.sub(maximumDebt);
+
+                            if(debtDifference.gt(state.tokenBalance)) {
+                                canBuyRiskyVault = false;
+                            }
+                        }
+                    } else {
+                        canBuyRiskyVault = false;
+                    }
+                }
+            } else {
+                canBuyRiskyVault = false;
+            }
 
             parts.push(
-                h('button', { className: 'button', disabled: debt_collateral_ratio.gte(minimum_collateral_percentage), onclick: () => buyRisky(state.selectedVaultIndex) }, 'Buy risky vault')
+                h('button', { className: 'button', disabled: !canBuyRiskyVault, onclick: () => buyRisky(state.selectedVaultIndex) }, 'Buy risky vault')
             );
         }
     }
