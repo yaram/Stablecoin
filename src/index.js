@@ -228,6 +228,24 @@ function registerBalanceEventListeners() {
     });
 }
 
+async function registerPriceEventListeners() {
+    const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.provider);
+
+    const ethPriceSourceAddress = await contract.ethPriceSource();
+    const ethPriceSource = new ethers.Contract(ethPriceSourceAddress, PriceSource.abi, state.provider);
+
+    const tokenPriceSourceAddress = await contract.tokenPriceSource();
+    const tokenPriceSource = new ethers.Contract(tokenPriceSourceAddress, PriceSource.abi, state.provider);
+
+    ethPriceSource.on('ChangePrice', (oldPrice, newPrice) => {
+        state.ethPrice = newPrice;
+    });
+
+    tokenPriceSource.on('ChangePrice', (oldPrice, newPrice) => {
+        state.tokenPrice = newPrice;
+    });
+}
+
 async function loadPrices() {
     const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.provider);
 
@@ -715,5 +733,6 @@ function update() {
 }
 
 loadVaults();
-loadPrices();
 registerVaultEventListeners();
+loadPrices();
+registerPriceEventListeners();

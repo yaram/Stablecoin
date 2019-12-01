@@ -14,6 +14,10 @@ contract TestPriceSource is PriceSource {
     }
 
     function setPrice(uint256 price) external {
+        uint256 oldPrice = _price;
+
         _price = price;
+
+        emit ChangePrice(oldPrice, price);
     }
 }
