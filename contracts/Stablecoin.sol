@@ -90,7 +90,7 @@ contract Stablecoin is ERC20, ERC20Detailed {
     }
 
     function destroyVault(uint256 vaultID) external onlyVaultOwner(vaultID) {
-        require(vaultDebt[vaultID] != 0, "Vault has outstanding debt");
+        require(vaultDebt[vaultID] == 0, "Vault has outstanding debt");
 
         if(vaultCollateral[vaultID] >= 0) {
             msg.sender.transfer(vaultCollateral[vaultID]);
