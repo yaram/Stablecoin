@@ -1,8 +1,8 @@
 const ganache = require('ganache-core');
 const Bundler = require('parcel-bundler');
 const ethers = require('ethers');
-const Stablecoin = require('./build/Stablecoin.json');
-const ConstantPriceSource = require('./build/ConstantPriceSource.json');
+const TestStablecoin = require('./build/TestStablecoin.json');
+const TestPriceSource = require('./build/TestPriceSource.json');
 
 ganache.server().listen(8545, (err, blockchain) => {
     if(err) {
@@ -20,18 +20,18 @@ ganache.server().listen(8545, (err, blockchain) => {
 
         const wallet = new ethers.Wallet(blockchain.accounts[blockchain.coinbase].secretKey, provider);
 
-        const stablecoinFactory = ethers.ContractFactory.fromSolidity(Stablecoin, wallet);
-        const constantPriceSourceFactory = ethers.ContractFactory.fromSolidity(ConstantPriceSource, wallet);
+        const testStablecoinFactory = ethers.ContractFactory.fromSolidity(TestStablecoin, wallet);
+        const testPriceSourceFactory = ethers.ContractFactory.fromSolidity(TestPriceSource, wallet);
 
-        constantPriceSourceFactory.deploy(ethers.utils.parseEther('100'))
+        testPriceSourceFactory.deploy(ethers.utils.parseEther('100'))
             .then(ethPriceSource => {
                 return Promise.all([
                     ethPriceSource,
-                    constantPriceSourceFactory.deploy(ethers.utils.parseEther('1'))
+                    testPriceSourceFactory.deploy(ethers.utils.parseEther('1'))
                 ]);
             })
             .then(([ethPriceSource, tokenPriceSource]) => {
-                return stablecoinFactory.deploy(ethPriceSource.address, tokenPriceSource.address, 150, 'Test', 'TEST');
+                return testStablecoinFactory.deploy(ethPriceSource.address, tokenPriceSource.address, 150, 'Test', 'TEST');
             })
             .then(stablecoin => {
                 console.log(`Primary contract deployed at ${stablecoin.address}`);

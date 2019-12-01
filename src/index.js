@@ -248,6 +248,16 @@ async function borrow(index) {
     loadBalances();
 }
 
+async function buyRisky(index) {
+    const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
+
+    await contract.buyRiskyVault(state.vaults[index].id);
+
+    loadVaults();
+    loadPrices();
+    loadBalances();
+}
+
 function selectVault(index) {
     state.selectedVaultIndex = index;
     update();
@@ -305,25 +315,54 @@ function selectedVaultDisplay() {
             debtRatioText = `${collateralValueBig.mul(100).div(debtValueBig)}%`;
         }
 
+        const maximumDebtValueBig = collateralValueBig.mul(100).div(minimum_collateral_percentage);
+
+        const maximumDebt = maximumDebtValueBig.div(state.tokenPrice);
+
+        const debtDifference = maximumDebt.sub(vault.debt);
+
+        let debtDifferenceLabel;
+        let debtDifferenceText;
+        if(debtDifference.gte(0)) {
+            debtDifferenceLabel = 'Available to borrow';
+            debtDifferenceText = ethers.utils.formatEther(debtDifference);
+        } else {
+            debtDifferenceLabel = 'Needed to buy';
+            debtDifferenceText = ethers.utils.formatEther(ethers.constants.Zero.sub(debtDifference));
+        }
+
         parts.push(
             h('div', { className: 'columns' }, [
                 h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Collateral to Debt Ratio'),
                 h('div', { className: 'column' }, debtRatioText),
-                h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Available to Borrow'),
-                h('div', { className: 'column' }, `${ethers.utils.formatEther(collateralValueBig.mul(100).div(minimum_collateral_percentage).div(state.tokenPrice).sub(vault.debt))} ${token_symbol}`)
+                h('div', { className: 'column has-text-right has-text-weight-bold' }, debtDifferenceLabel),
+                h('div', { className: 'column' }, `${debtDifferenceText} ${token_symbol}`)
             ])
         );
     }
 
-    parts.push(
-        h('div', {}, [
-            h('input', { type: 'text', className: `input space-bottom ${state.amountText === '' || isAmountTextValid() ? '' : 'is-danger'}`, placeholder: 'amount', value: state.amountText, oninput: amountTextChange }),
-            h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
-            h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => withdraw(state.selectedVaultIndex) }, 'Withdraw ETH'),
-            h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => payBack(state.selectedVaultIndex) }, `Pay back ${token_symbol} debt`),
-            h('button', { className: 'button', disabled: !isAmountTextValid(), onclick: () => borrow(state.selectedVaultIndex) }, `Borrow ${token_symbol}`)
-        ])
-    );
+    if(state.address !== null) {
+        if(vault.owner === state.address) {
+            parts.push(
+                h('div', {}, [
+                    h('input', { type: 'text', className: `input space-bottom ${state.amountText === '' || isAmountTextValid() ? '' : 'is-danger'}`, placeholder: 'amount', value: state.amountText, oninput: amountTextChange }),
+                    h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
+                    h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => withdraw(state.selectedVaultIndex) }, 'Withdraw ETH'),
+                    h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => payBack(state.selectedVaultIndex) }, `Pay back ${token_symbol} debt`),
+                    h('button', { className: 'button', disabled: !isAmountTextValid(), onclick: () => borrow(state.selectedVaultIndex) }, `Borrow ${token_symbol}`)
+                ])
+            );
+        } else if(state.ethPrice !== null && state.tokenPrice !== null) {
+            const collateralValueBig = vault.collateral.mul(state.ethPrice);
+            const debtValueBig = vault.debt.mul(state.tokenPrice);
+
+            const debt_collateral_ratio = collateralValueBig.mul(100).div(debtValueBig);
+
+            parts.push(
+                h('button', { className: 'button', disabled: debt_collateral_ratio.gte(minimum_collateral_percentage), onclick: () => buyRisky(state.selectedVaultIndex) }, 'Buy risky vault')
+            );
+        }
+    }
 
     return h('section', { className: 'section' }, parts);
 }
@@ -369,9 +408,7 @@ function render() {
                 if(state.address === null || !state.onlyOwnedVaults || vault.owner == state.address) {
                     list.push(h('div', { className: 'box' }, [
                         h('p', {}, vaultInfo(vault)),
-                        state.address !== null && vault.owner === state.address ?
-                            h('button', { className: 'button', disabled: state.selectedVaultIndex === index, onclick: () => selectVault(index) }, 'Select') :
-                            []
+                        h('button', { className: 'button', disabled: state.selectedVaultIndex === index, onclick: () => selectVault(index) }, 'Select')
                     ]));
                 }
 
