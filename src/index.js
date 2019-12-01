@@ -26,7 +26,8 @@ async function connect() {
                     state.address = addresses[0];
                     update();
     
-                    loadBalances();
+                    await loadBalances();
+                    registerBalanceEventListeners();
                 } catch(err) {
                     state.walletError = 'Error connecting to web3 provider';
 
@@ -44,7 +45,8 @@ async function connect() {
                 state.address = address;
                 update();
 
-                loadBalances();
+                await loadBalances();
+                registerBalanceEventListeners();
             } catch(err) {
                 state.walletError = 'Error connecting to web3 provider';
 
@@ -66,7 +68,8 @@ async function connect() {
             state.address = address;
             update();
 
-            loadBalances();
+            await loadBalances();
+            registerBalanceEventListeners();
         } catch(err) {
             state.walletError = 'Error connecting to development node';
 
@@ -76,16 +79,11 @@ async function connect() {
 }
 
 async function loadVaults() {
-    if(state.loadingVaults) {
-        return;
-    }
-
     let previousSelectedVaultID = null;
     if(state.selectedVaultIndex !== null) {
         previousSelectedVaultID = state.vaults[state.selectedVaultIndex].id;
     }
 
-    state.loadingVaults = true;
     state.vaults = [];
     state.selectedVaultIndex = null;
     update();
@@ -103,7 +101,7 @@ async function loadVaults() {
             const debt = await contract.vaultDebt(i);
 
             state.vaults.push({
-                id: i,
+                id: ethers.utils.bigNumberify(i),
                 owner,
                 collateral,
                 debt
@@ -116,9 +114,118 @@ async function loadVaults() {
             update();
         }
     }
+}
 
-    state.loadingVaults = false;
-    update();
+function registerVaultEventListeners() {
+    const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.provider);
+
+    contract.on('CreateVault', (vaultID, creator) => {
+        state.vaults.push({
+            id: vaultID,
+            owner: creator,
+            collateral: ethers.constants.Zero,
+            debt: ethers.constants.Zero
+        });
+        update();
+    });
+
+    contract.on('DestroyVault', (vaultID) => {
+        for(let i = 0; i < state.vaults.length; i += 1) {
+            if(state.vaults[i].id.eq(vaultID)) {
+                state.vaults.splice(i, 1);
+                break;
+            }
+        }
+
+        update();
+    });
+
+    contract.on('TransferVault', (vaultID, from, to) => {
+        for(const vault of state.vaults) {
+            if(vault.id.eq(vaultID)) {
+                vault.owner = to;
+                break;
+            }
+        }
+
+        update();
+    });
+
+    contract.on('DepositCollateral', (vaultID, amount) => {
+        for(const vault of state.vaults) {
+            if(vault.id.eq(vaultID)) {
+                vault.collateral = vault.collateral.add(amount);
+                break;
+            }
+        }
+
+        update();
+    });
+
+    contract.on('WithdrawCollateral', (vaultID, amount) => {
+        for(const vault of state.vaults) {
+            if(vault.id.eq(vaultID)) {
+                vault.collateral = vault.collateral.sub(amount);
+                break;
+            }
+        }
+
+        update();
+    });
+
+    contract.on('BorrowToken', (vaultID, amount) => {
+        for(const vault of state.vaults) {
+            if(vault.id.eq(vaultID)) {
+                vault.debt = vault.debt.add(amount);
+                break;
+            }
+        }
+
+        update();
+    });
+
+    contract.on('PayBackToken', (vaultID, amount) => {
+        for(const vault of state.vaults) {
+            if(vault.id.eq(vaultID)) {
+                vault.debt = vault.debt.sub(amount);
+                break;
+            }
+        }
+
+        update();
+    });
+
+    contract.on('BuyRiskyVault', (vaultID, owner, buyer, amountPayed) => {
+        for(const vault of state.vaults) {
+            if(vault.id.eq(vaultID)) {
+                vault.owner = buyer;
+                vault.debt = vault.debt.sub(amountPayed);
+                break;
+            }
+        }
+
+        update();
+    });
+}
+
+function registerBalanceEventListeners() {
+    state.provider.on(state.address, (newBalance) => {
+        state.ethBalance = newBalance;
+        update();
+    });
+
+    const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.provider);
+
+    contract.on('Transfer', (from, to, amount) => {
+        if(from == state.address) {
+            state.tokenBalance = state.tokenBalance.sub(amount);
+        }
+
+        if(to == state.address) {
+            state.tokenBalance = state.tokenBalance.add(amount);
+        }
+        update();
+    });
 }
 
 async function loadPrices() {
@@ -154,10 +261,6 @@ async function createVault() {
     const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
     await contract.createVault();
-
-    loadVaults();
-    loadPrices();
-    loadBalances();
 }
 
 function calculateCollateralPercentage(collateral, debt) {
@@ -190,10 +293,6 @@ async function deposit(index) {
     const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
     await contract.depositCollateral(state.vaults[index].id, { value: amount });
-
-    loadVaults();
-    loadPrices();
-    loadBalances();
 }
 
 async function withdraw(index) {
@@ -207,10 +306,6 @@ async function withdraw(index) {
     const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
     await contract.withdrawCollateral(state.vaults[index].id, amount);
-
-    loadVaults();
-    loadPrices();
-    loadBalances();
 }
 
 async function payBack(index) {
@@ -224,10 +319,6 @@ async function payBack(index) {
     const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
     await contract.payBackToken(state.vaults[index].id, amount);
-
-    loadVaults();
-    loadPrices();
-    loadBalances();
 }
 
 async function borrow(index) {
@@ -241,20 +332,12 @@ async function borrow(index) {
     const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
     await contract.borrowToken(state.vaults[index].id, amount);
-
-    loadVaults();
-    loadPrices();
-    loadBalances();
 }
 
 async function buyRisky(index) {
     const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
     await contract.buyRiskyVault(state.vaults[index].id);
-
-    loadVaults();
-    loadPrices();
-    loadBalances();
 }
 
 function selectVault(index) {
@@ -608,7 +691,6 @@ let state = {
     provider: environment === 'production' ? ethers.getDefaultProvider(network) : new ethers.providers.JsonRpcProvider('http://localhost:8545'),
     signer: null,
     address: null,
-    loadingVaults: false,
     onlyOwnedVaults: true,
     vaults: [],
     selectedVaultIndex: null,
@@ -634,3 +716,4 @@ function update() {
 
 loadVaults();
 loadPrices();
+registerVaultEventListeners();
