@@ -79,15 +79,6 @@ async function connect() {
 }
 
 async function loadVaults() {
-    let previousSelectedVaultID = null;
-    if(state.selectedVaultIndex !== null) {
-        previousSelectedVaultID = state.vaults[state.selectedVaultIndex].id;
-    }
-
-    state.vaults = [];
-    state.selectedVaultIndex = null;
-    update();
-
     const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.provider);
 
     const vaultCount = await contract.vaultCount();
@@ -106,14 +97,12 @@ async function loadVaults() {
                 collateral,
                 debt
             });
-
-            if(previousSelectedVaultID !== null && previousSelectedVaultID.eq(i) && state.selectedVaultIndex === null) {
-                state.selectedVaultIndex = state.vaults.length - 1;
-            }
-
             update();
         }
     }
+
+    state.loadingVaults = false;
+    update();
 }
 
 function registerVaultEventListeners() {
@@ -269,12 +258,16 @@ async function loadPrices() {
 }
 
 async function loadBalances() {
+    state.loadingBalances = true;
+    update();
+
     const ethBalance = await state.provider.getBalance(state.address);
 
     const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
     const tokenBalance = await contract.balanceOf(state.address);
     
+    state.loadingBalances = false;
     state.ethBalance = ethBalance;
     state.tokenBalance = tokenBalance;
     update();
@@ -773,7 +766,11 @@ function render() {
                             h('div', { className: 'level-item'},
                                 state.address === null ?
                                     h('button', { className: 'button', onclick: connect }, 'Connect') :
-                                    h('p', {},  state.address !== null ? state.address : 'Loading address...')
+                                    h('p', {},
+                                        state.address !== null ?
+                                        state.address :
+                                        h('progress', { className: 'progress is-small' })
+                                    )
                             )
                         ),
                         h('div', { className: 'level-right'},
@@ -781,10 +778,12 @@ function render() {
                                 h('div', { className: 'balance-price' }, [
                                     state.ethBalance !== null && state.tokenBalance !== null ?
                                         h('div', {}, `Balance: ${ethers.utils.formatEther(state.ethBalance)} ETH, ${ethers.utils.formatEther(state.tokenBalance)} ${token_symbol}`) :
-                                        [],
+                                        state.loadingBalances ?
+                                            h('progress', { className: 'progress is-small' }) :
+                                            [],
                                     state.ethPrice !== null && state.tokenPrice !== null ?
                                         h('div', {}, `Prices: ${ethers.utils.formatEther(state.ethPrice)} ${target_symbol}/ETH, ${ethers.utils.formatEther(state.tokenPrice)} ${target_symbol}/${token_symbol}`) :
-                                        []
+                                        h('progress', { className: 'progress is-small' })
                                 ])
                             ])
                         )
@@ -861,7 +860,10 @@ function render() {
                     }
 
                     return list;
-                }, [])
+                }, []),
+                state.loadingVaults ?
+                    h('progress', { className: 'progress is-small' }) :
+                    []
             ])
         ]),
         state.transactionHash !== null ?
@@ -879,12 +881,14 @@ let state = {
     address: null,
     transactionHash: null,
     onlyOwnedVaults: true,
+    loadingVaults: true,
     vaults: [],
     selectedVaultIndex: null,
     inputText: '',
     tab: 'deposit',
     ethPrice: null,
     tokenPrice: null,
+    loadingBalances: false,
     ethBalance: null,
     tokenBalance: null
 };
