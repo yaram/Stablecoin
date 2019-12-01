@@ -291,11 +291,17 @@ function selectedVaultDisplay() {
             ]),
         );
 
-        let debtRatioText;
-        if(debtValueBig.eq(0)) {
-            debtRatioText = '\u221e';
+        let debtRatioDisplay;
+        if(!debtValueBig.eq(0)) {
+            const debtRatio = collateralValueBig.mul(100).div(debtValueBig);
+
+            if(debtRatio.gte(minimum_collateral_percentage)) {
+                debtRatioDisplay = h('div', { className: 'column'}, `${debtRatio}%`);
+            } else {
+                debtRatioDisplay = h('div', { className: 'column has-text-danger'}, `${debtRatio}%`);
+            }
         } else {
-            debtRatioText = `${collateralValueBig.mul(100).div(debtValueBig)}%`;
+            debtRatioDisplay = h('div', { className: 'column'}, '\u221e');
         }
 
         const maximumDebtValueBig = collateralValueBig.mul(100).div(minimum_collateral_percentage);
@@ -317,7 +323,7 @@ function selectedVaultDisplay() {
         parts.push(
             h('div', { className: 'columns' }, [
                 h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Collateral to Debt Ratio'),
-                h('div', { className: 'column' }, debtRatioText),
+                debtRatioDisplay,
                 h('div', { className: 'column has-text-right has-text-weight-bold' }, debtDifferenceLabel),
                 h('div', { className: 'column' }, `${debtDifferenceText} ${token_symbol}`)
             ])
@@ -404,14 +410,22 @@ function render() {
                         const debtValue = vault.debt.mul(state.tokenPrice).div(ethers.constants.WeiPerEther);
                         const collateralValue = vault.collateral.mul(state.ethPrice).div(ethers.constants.WeiPerEther);
 
-                        let debtRatioText;
+                        let debtRatioDisplay;
                         if(!debtValue.eq(0)) {
-                            debtRatioText = `${collateralValue.mul(100).div(debtValue)}%`;
+                            const debtRatio = collateralValue.mul(100).div(debtValue);
+
+                            if(debtRatio.gte(minimum_collateral_percentage)) {
+                                debtRatioDisplay = h('div', { className: 'column'}, `${debtRatio}%`);
+                            } else {
+                                debtRatioDisplay = h('div', { className: 'column has-text-danger'}, `${debtRatio}%`);
+                            }
+                        } else {
+                            debtRatioDisplay = h('div', { className: 'column'}, '');
                         }
 
                         parts.push(
                             h('div', { className: 'columns' }, [
-                                h('div', { className: 'column'}, debtRatioText),
+                                debtRatioDisplay,
                                 h('div', { className: 'column'}, `${ethers.utils.formatEther(collateralValue)} ${target_symbol}`),
                                 h('div', { className: 'column'}, `${ethers.utils.formatEther(debtValue)} ${target_symbol}`)
                             ])
