@@ -269,7 +269,12 @@ function selectedVaultDisplay() {
     const parts = [];
 
     parts.push(
-        h('h1', { className: 'title' }, `Vault #${vault.id}`),
+        h('div', { className: 'level' },
+            h('div', { className: 'level-left'}, [
+                h('h1', { className: 'title level-item space-only-right' }, `Vault #${vault.id}`),
+                h('p', { className: 'level-item' }, vault.owner)
+            ])
+        ),
         h('div', { className: 'columns' }, [
             h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Collateral'),
             h('div', { className: 'column' }, `${ethers.utils.formatEther(vault.collateral)} ETH`),
@@ -362,16 +367,20 @@ function render() {
             h('div', { className: 'container' }, 
                 h('div', { className: 'level' }, [
                     state.address === null ?
-                        h('button', { className: 'button', onclick: connect }, 'Connect') :
-                        h('p', {},  state.address !== null ? state.address : 'Loading address...'),
-                    h('div', {}, [
-                        state.ethBalance !== null && state.tokenBalance !== null ?
-                            h('p', {}, `Balance: ${ethers.utils.formatEther(state.ethBalance)} ETH, ${ethers.utils.formatEther(state.tokenBalance)} ${token_symbol}`) :
-                            [],
-                        state.ethPrice !== null && state.tokenPrice !== null ?
-                            h('p', {}, `ETH price: ${ethers.utils.formatEther(state.ethPrice)} ${target_symbol}, ${token_symbol} price: ${ethers.utils.formatEther(state.tokenPrice)} ${target_symbol}`) :
-                            []
-                    ])
+                        h('button', { className: 'button level-left', onclick: connect }, 'Connect') :
+                        h('p', { className: 'level-left' },  state.address !== null ? state.address : 'Loading address...'),
+                    h('div', { className: 'level-right'},
+                        h('div', { className: 'level-item'}, [
+                            h('div', { className: 'balance-price' }, [
+                                state.ethBalance !== null && state.tokenBalance !== null ?
+                                    h('div', {}, `Balance: ${ethers.utils.formatEther(state.ethBalance)} ETH, ${ethers.utils.formatEther(state.tokenBalance)} ${token_symbol}`) :
+                                    [],
+                                state.ethPrice !== null && state.tokenPrice !== null ?
+                                    h('div', {}, `Prices: ${ethers.utils.formatEther(state.ethPrice)} ${target_symbol}/ETH, ${ethers.utils.formatEther(state.tokenPrice)} ${target_symbol}/${token_symbol}`) :
+                                    []
+                            ])
+                        ])
+                    )
                 ]),
                 state.walletError !== null ?
                     h('p', { className: 'has-text-danger' }, state.walletError) :
@@ -386,11 +395,13 @@ function render() {
             state.address !== null ?
                 h('div', { className: 'level space-bottom'},
                     h('div', { className: 'level-left' }, [
-                        h('button', { className: 'button space-right', onclick: createVault }, 'Create Vault'),
-                        h('label', { className: 'checkbox' }, [
-                            h('input', { type: 'checkbox', checked: state.onlyOwnedVaults, onchange: onlyOwnedVaultsChange }),
-                            ' Only my vaults'
-                        ])
+                        h('button', { className: 'button space-right level-item', onclick: createVault }, 'Create Vault'),
+                        h('div', { className: 'level-item' },
+                            h('label', { className: 'checkbox' }, [
+                                h('input', { type: 'checkbox', checked: state.onlyOwnedVaults, onchange: onlyOwnedVaultsChange }),
+                                ' Only my vaults'
+                            ])
+                        )
                     ])
                 ) :
                 [],

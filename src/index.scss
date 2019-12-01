@@ -11,3 +11,13 @@
 .space-right {
     margin-right: $block-spacing;
 }
+
+.space-only-right {
+    margin: 0 $block-spacing 0 0 !important;
+}
+
+.balance-price {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
