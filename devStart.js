@@ -37,6 +37,7 @@ ganache.server().listen(8545, (err, blockchain) => {
                 console.log(`Primary contract deployed at ${stablecoin.address}`);
 
                 process.env.CONTRACT_ADDRESS = stablecoin.address;
+                process.env.MINIMUM_COLLATERAL_PERCENTAGE = 150;
                 process.env.TOKEN_SYMBOL = 'TEST';
                 process.env.TARGET_SYMBOL = 'USD';
 

@@ -6,6 +6,7 @@ import PriceSource from '../build/PriceSource.json';
 const environment = process.env.NODE_ENV == null ? 'development' : process.env.NODE_ENV;
 const contract_address = process.env.CONTRACT_ADDRESS;
 const network = process.env.NETWORK;
+const minimum_collateral_percentage = process.env.MINIMUM_COLLATERAL_PERCENTAGE;
 const token_symbol = process.env.TOKEN_SYMBOL;
 const target_symbol = process.env.TARGET_SYMBOL;
 
@@ -256,8 +257,8 @@ function vaultInfo(vault) {
     let result = `${vault.id} (${vault.owner}): ${ethers.utils.formatEther(vault.debt)}/${ethers.utils.formatEther(vault.collateral)}`;
 
     if(state.ethPrice !== null && state.tokenPrice !== null) {
-        const debtValue = vault.debt.mul(state.tokenPrice).div(ethers.utils.parseEther('1'));
-        const collateralValue = vault.collateral.mul(state.ethPrice).div(ethers.utils.parseEther('1'));
+        const debtValue = vault.debt.mul(state.tokenPrice).div(ethers.constants.WeiPerEther);
+        const collateralValue = vault.collateral.mul(state.ethPrice).div(ethers.constants.WeiPerEther);
 
         result += ` (${ethers.utils.formatEther(debtValue)}/${ethers.utils.formatEther(collateralValue)})`;
 
@@ -267,6 +268,64 @@ function vaultInfo(vault) {
     }
 
     return result;
+}
+
+function selectedVaultDisplay() {
+    const vault = state.vaults[state.selectedVaultIndex];
+
+    const parts = [];
+
+    parts.push(
+        h('h1', { className: 'title' }, `Vault #${vault.id}`),
+        h('div', { className: 'columns' }, [
+            h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Collateral'),
+            h('div', { className: 'column' }, `${ethers.utils.formatEther(vault.collateral)} ETH`),
+            h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Debt'),
+            h('div', { className: 'column' }, `${ethers.utils.formatEther(vault.debt)} ${token_symbol}`)
+        ]),
+    );
+
+    if(state.ethPrice !== null && state.tokenPrice !== null) {
+        const collateralValueBig = vault.collateral.mul(state.ethPrice);
+        const debtValueBig = vault.debt.mul(state.tokenPrice);
+
+        parts.push(
+            h('div', { className: 'columns' }, [
+                h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Collateral Value'),
+                h('div', { className: 'column' }, `${ethers.utils.formatEther(collateralValueBig.div(ethers.constants.WeiPerEther))} ${target_symbol}`),
+                h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Debt Value'),
+                h('div', { className: 'column' }, `${ethers.utils.formatEther(debtValueBig.div(ethers.constants.WeiPerEther))} ${target_symbol}`)
+            ]),
+        );
+
+        let debtRatioText;
+        if(debtValueBig.eq(0)) {
+            debtRatioText = '\u221e';
+        } else {
+            debtRatioText = `${collateralValueBig.mul(100).div(debtValueBig)}%`;
+        }
+
+        parts.push(
+            h('div', { className: 'columns' }, [
+                h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Collateral to Debt Ratio'),
+                h('div', { className: 'column' }, debtRatioText),
+                h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Available to Borrow'),
+                h('div', { className: 'column' }, `${ethers.utils.formatEther(collateralValueBig.mul(100).div(minimum_collateral_percentage).div(state.tokenPrice).sub(vault.debt))} ${token_symbol}`)
+            ])
+        );
+    }
+
+    parts.push(
+        h('div', {}, [
+            h('input', { type: 'text', className: `input space-bottom ${state.amountText === '' || isAmountTextValid() ? '' : 'is-danger'}`, placeholder: 'amount', value: state.amountText, oninput: amountTextChange }),
+            h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
+            h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => withdraw(state.selectedVaultIndex) }, 'Withdraw ETH'),
+            h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => payBack(state.selectedVaultIndex) }, `Pay back ${token_symbol} debt`),
+            h('button', { className: 'button', disabled: !isAmountTextValid(), onclick: () => borrow(state.selectedVaultIndex) }, `Borrow ${token_symbol}`)
+        ])
+    );
+
+    return h('section', { className: 'section' }, parts);
 }
 
 function render() {
@@ -292,30 +351,7 @@ function render() {
             )
         ),
         state.selectedVaultIndex !== null ? 
-            h('section', { className: 'section' }, [
-                h('h1', { className: 'title' }, `Vault #${state.vaults[state.selectedVaultIndex].id}`),
-                h('div', { className: 'columns' }, [
-                    h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Collateral'),
-                    h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].collateral)} ETH`),
-                    h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Debt'),
-                    h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].debt)} ${token_symbol}`)
-                ]),
-                state.ethPrice !== null && state.tokenPrice !== null ?
-                    h('div', { className: 'columns' }, [
-                        h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Collateral Value'),
-                        h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].collateral.mul(state.ethPrice).div(ethers.utils.parseEther('1')))} ${target_symbol}`),
-                        h('div', { className: 'column has-text-right has-text-weight-bold' }, 'Debt Value'),
-                        h('div', { className: 'column' }, `${ethers.utils.formatEther(state.vaults[state.selectedVaultIndex].debt.mul(state.tokenPrice).div(ethers.utils.parseEther('1')))} ${target_symbol}`)
-                    ]) :
-                    [],
-                h('div', {}, [
-                    h('input', { type: 'text', className: `input space-bottom ${state.amountText === '' || isAmountTextValid() ? '' : 'is-danger'}`, placeholder: 'amount', value: state.amountText, oninput: amountTextChange }),
-                    h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
-                    h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => withdraw(state.selectedVaultIndex) }, 'Withdraw ETH'),
-                    h('button', { className: 'button space-right', disabled: !isAmountTextValid(), onclick: () => payBack(state.selectedVaultIndex) }, `Pay back ${token_symbol} debt`),
-                    h('button', { className: 'button', disabled: !isAmountTextValid(), onclick: () => borrow(state.selectedVaultIndex) }, `Borrow ${token_symbol}`)
-                ]),
-            ]) :
+            selectedVaultDisplay() :
             [],
         h('section', { className: 'section' }, [
             state.address !== null ?
