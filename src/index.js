@@ -263,23 +263,6 @@ function selectVault(index) {
     update();
 }
 
-function vaultInfo(vault) {
-    let result = `${vault.id} (${vault.owner}): ${ethers.utils.formatEther(vault.debt)}/${ethers.utils.formatEther(vault.collateral)}`;
-
-    if(state.ethPrice !== null && state.tokenPrice !== null) {
-        const debtValue = vault.debt.mul(state.tokenPrice).div(ethers.constants.WeiPerEther);
-        const collateralValue = vault.collateral.mul(state.ethPrice).div(ethers.constants.WeiPerEther);
-
-        result += ` (${ethers.utils.formatEther(debtValue)}/${ethers.utils.formatEther(collateralValue)})`;
-
-        if(debtValue != 0) {
-            result += ` ${collateralValue.mul(100).div(debtValue)}%`;
-        }
-    }
-
-    return result;
-}
-
 function selectedVaultDisplay() {
     const vault = state.vaults[state.selectedVaultIndex];
 
@@ -393,6 +376,7 @@ function render() {
             selectedVaultDisplay() :
             [],
         h('section', { className: 'section' }, [
+            h('h1', { className: 'title' }, 'Vaults'),
             state.address !== null ?
                 h('div', { className: 'level space-bottom'},
                     h('div', { className: 'level-left' }, [
@@ -406,10 +390,40 @@ function render() {
                 [],
             state.vaults.reduce((list, vault, index) => {
                 if(state.address === null || !state.onlyOwnedVaults || vault.owner == state.address) {
-                    list.push(h('div', { className: 'box' }, [
-                        h('p', {}, vaultInfo(vault)),
-                        h('button', { className: 'button', disabled: state.selectedVaultIndex === index, onclick: () => selectVault(index) }, 'Select')
-                    ]));
+                    const parts = [];
+
+                    parts.push(
+                        h('div', { className: 'columns' }, [
+                            h('div', { className: 'column'}, `#${vault.id}`),
+                            h('div', { className: 'column'}, `${ethers.utils.formatEther(vault.collateral)} ETH`),
+                            h('div', { className: 'column'}, `${ethers.utils.formatEther(vault.debt)} ${token_symbol}`)
+                        ])
+                    );
+
+                    if(state.ethPrice !== null && state.tokenPrice !== null) {
+                        const debtValue = vault.debt.mul(state.tokenPrice).div(ethers.constants.WeiPerEther);
+                        const collateralValue = vault.collateral.mul(state.ethPrice).div(ethers.constants.WeiPerEther);
+
+                        let debtRatioText;
+                        if(!debtValue.eq(0)) {
+                            debtRatioText = `${collateralValue.mul(100).div(debtValue)}%`;
+                        }
+
+                        parts.push(
+                            h('div', { className: 'columns' }, [
+                                h('div', { className: 'column'}, debtRatioText),
+                                h('div', { className: 'column'}, `${ethers.utils.formatEther(collateralValue)} ${target_symbol}`),
+                                h('div', { className: 'column'}, `${ethers.utils.formatEther(debtValue)} ${target_symbol}`)
+                            ])
+                        );
+                    }
+
+                    list.push(
+                        h('div', { className: 'box is-size-7 has-text-weight-bold' }, [
+                            parts,
+                            h('button', { className: 'button', disabled: state.selectedVaultIndex === index, onclick: () => selectVault(index) }, 'Select')
+                        ])
+                    );
                 }
 
                 return list;
