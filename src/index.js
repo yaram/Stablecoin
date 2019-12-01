@@ -23,7 +23,7 @@ async function connect() {
     
                     state.provider = provider;
                     state.signer = provider.getSigner();
-                    state.address = addresses[0];
+                    state.address = ethers.utils.getAddress(addresses[0]);
                     update();
     
                     await loadBalances();
@@ -42,7 +42,7 @@ async function connect() {
 
                 state.provider = provider;
                 state.signer = signer;
-                state.address = address;
+                state.address = ethers.utils.getAddress(address);
                 update();
 
                 await loadBalances();
@@ -65,7 +65,7 @@ async function connect() {
 
             state.provider = provider;
             state.signer = signer;
-            state.address = address;
+            state.address = ethers.utils.getAddress(address);
             update();
 
             await loadBalances();
