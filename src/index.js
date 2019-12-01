@@ -278,7 +278,19 @@ async function loadBalances() {
 async function createVault() {
     const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
-    await contract.createVault();
+    const transaction = await contract.createVault();
+
+    state.transactionHash = transaction.hash;
+    update();
+
+    try {
+        await transaction.wait();
+    } catch(err) {
+
+    }
+
+    state.transactionHash = null;
+    update();
 }
 
 function calculateCollateralPercentage(collateral, debt) {
@@ -310,7 +322,19 @@ async function deposit(index) {
 
     const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
-    await contract.depositCollateral(state.vaults[index].id, { value: amount });
+    const transaction = await contract.depositCollateral(state.vaults[index].id, { value: amount });
+
+    state.transactionHash = transaction.hash;
+    update();
+
+    try {
+        await transaction.wait();
+    } catch(err) {
+
+    }
+
+    state.transactionHash = null;
+    update();
 }
 
 async function withdraw(index) {
@@ -323,7 +347,19 @@ async function withdraw(index) {
 
     const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
-    await contract.withdrawCollateral(state.vaults[index].id, amount);
+    const transaction = await contract.withdrawCollateral(state.vaults[index].id, amount);
+
+    state.transactionHash = transaction.hash;
+    update();
+
+    try {
+        await transaction.wait();
+    } catch(err) {
+
+    }
+
+    state.transactionHash = null;
+    update();
 }
 
 async function payBack(index) {
@@ -336,7 +372,19 @@ async function payBack(index) {
 
     const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
-    await contract.payBackToken(state.vaults[index].id, amount);
+    const transaction = await contract.payBackToken(state.vaults[index].id, amount);
+
+    state.transactionHash = transaction.hash;
+    update();
+
+    try {
+        await transaction.wait();
+    } catch(err) {
+
+    }
+
+    state.transactionHash = null;
+    update();
 }
 
 async function borrow(index) {
@@ -349,13 +397,37 @@ async function borrow(index) {
 
     const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
-    await contract.borrowToken(state.vaults[index].id, amount);
+    const transaction = await contract.borrowToken(state.vaults[index].id, amount);
+
+    state.transactionHash = transaction.hash;
+    update();
+
+    try {
+        await transaction.wait();
+    } catch(err) {
+
+    }
+
+    state.transactionHash = null;
+    update();
 }
 
 async function buyRisky(index) {
     const contract = new ethers.Contract(contract_address, Stablecoin.abi, state.signer);
 
-    await contract.buyRiskyVault(state.vaults[index].id);
+    const transaction = await contract.buyRiskyVault(state.vaults[index].id);
+
+    state.transactionHash = transaction.hash;
+    update();
+
+    try {
+        await transaction.wait();
+    } catch(err) {
+
+    }
+
+    state.transactionHash = null;
+    update();
 }
 
 function selectVault(index) {
@@ -477,7 +549,7 @@ function selectedVaultDisplay() {
                         value: state.amountText, oninput: amountTextChange
                     }),
                     h('div', {}, [
-                        h('button', { className: 'button', disabled: !isAmountTextValid, onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
+                        h('button', { className: 'button', disabled: !isAmountTextValid || state.transactionHash !== null, onclick: () => deposit(state.selectedVaultIndex) }, 'Deposit ETH'),
                     ])
                 );
             } else if(state.tab === 'withdraw') {
@@ -508,7 +580,7 @@ function selectedVaultDisplay() {
                         value: state.amountText, oninput: amountTextChange
                     }),
                     h('div', {}, [
-                        h('button', { className: 'button', disabled: !isAmountTextValid, onclick: () => withdraw(state.selectedVaultIndex) }, 'Withdraw ETH'),
+                        h('button', { className: 'button', disabled: !isAmountTextValid || state.transactionHash !== null, onclick: () => withdraw(state.selectedVaultIndex) }, 'Withdraw ETH'),
                     ])
                 );
             } else if(state.tab === 'borrow') {
@@ -539,7 +611,7 @@ function selectedVaultDisplay() {
                         value: state.amountText, oninput: amountTextChange
                     }),
                     h('div', {}, [
-                        h('button', { className: 'button', disabled: !isAmountTextValid, onclick: () => borrow(state.selectedVaultIndex) }, `Borrow ${token_symbol}`),
+                        h('button', { className: 'button', disabled: !isAmountTextValid || state.transactionHash !== null, onclick: () => borrow(state.selectedVaultIndex) }, `Borrow ${token_symbol}`),
                     ])
                 );
             } else if(state.tab === 'payBack') {
@@ -566,7 +638,7 @@ function selectedVaultDisplay() {
                         value: state.amountText, oninput: amountTextChange
                     }),
                     h('div', {}, [
-                        h('button', { className: 'button', disabled: !isAmountTextValid, onclick: () => payBack(state.selectedVaultIndex) }, `Pay Back ${token_symbol}`),
+                        h('button', { className: 'button', disabled: !isAmountTextValid || state.transactionHash !== null, onclick: () => payBack(state.selectedVaultIndex) }, `Pay Back ${token_symbol}`),
                     ])
                 );
             }
@@ -599,6 +671,10 @@ function selectedVaultDisplay() {
                 canBuyRiskyVault = false;
             }
 
+            if(state.transactionHash !== null) {
+                canBuyRiskyVault = false;
+            }
+
             parts.push(
                 h('button', { className: 'button', disabled: !canBuyRiskyVault, onclick: () => buyRisky(state.selectedVaultIndex) }, 'Buy risky vault')
             );
@@ -609,98 +685,105 @@ function selectedVaultDisplay() {
 }
 
 function render() {
-    return h('div', { className: 'container' }, [
-        h('section', { className: 'section' },
-            h('div', { className: 'container' }, 
-                h('div', { className: 'level' }, [
-                    state.address === null ?
-                        h('button', { className: 'button level-left', onclick: connect }, 'Connect') :
-                        h('p', { className: 'level-left' },  state.address !== null ? state.address : 'Loading address...'),
-                    h('div', { className: 'level-right'},
-                        h('div', { className: 'level-item'}, [
-                            h('div', { className: 'balance-price' }, [
-                                state.ethBalance !== null && state.tokenBalance !== null ?
-                                    h('div', {}, `Balance: ${ethers.utils.formatEther(state.ethBalance)} ETH, ${ethers.utils.formatEther(state.tokenBalance)} ${token_symbol}`) :
-                                    [],
-                                state.ethPrice !== null && state.tokenPrice !== null ?
-                                    h('div', {}, `Prices: ${ethers.utils.formatEther(state.ethPrice)} ${target_symbol}/ETH, ${ethers.utils.formatEther(state.tokenPrice)} ${target_symbol}/${token_symbol}`) :
-                                    []
-                            ])
-                        ])
-                    )
-                ]),
-                state.walletError !== null ?
-                    h('p', { className: 'has-text-danger' }, state.walletError) :
-                    [],
-            )
-        ),
-        state.selectedVaultIndex !== null ? 
-            selectedVaultDisplay() :
-            [],
-        h('section', { className: 'section' }, [
-            h('h1', { className: 'title' }, 'Vaults'),
-            state.address !== null ?
-                h('div', { className: 'level space-bottom'},
-                    h('div', { className: 'level-left' }, [
-                        h('button', { className: 'button space-right level-item', onclick: createVault }, 'Create Vault'),
-                        h('div', { className: 'level-item' },
-                            h('label', { className: 'checkbox' }, [
-                                h('input', { type: 'checkbox', checked: state.onlyOwnedVaults, onchange: onlyOwnedVaultsChange }),
-                                ' Only my vaults'
+    return h('div', {}, [
+        h('div', { className: 'container' }, [
+            h('section', { className: 'section' },
+                h('div', { className: 'container' }, 
+                    h('div', { className: 'level' }, [
+                        state.address === null ?
+                            h('button', { className: 'button level-left', onclick: connect }, 'Connect') :
+                            h('p', { className: 'level-left' },  state.address !== null ? state.address : 'Loading address...'),
+                        h('div', { className: 'level-right'},
+                            h('div', { className: 'level-item'}, [
+                                h('div', { className: 'balance-price' }, [
+                                    state.ethBalance !== null && state.tokenBalance !== null ?
+                                        h('div', {}, `Balance: ${ethers.utils.formatEther(state.ethBalance)} ETH, ${ethers.utils.formatEther(state.tokenBalance)} ${token_symbol}`) :
+                                        [],
+                                    state.ethPrice !== null && state.tokenPrice !== null ?
+                                        h('div', {}, `Prices: ${ethers.utils.formatEther(state.ethPrice)} ${target_symbol}/ETH, ${ethers.utils.formatEther(state.tokenPrice)} ${target_symbol}/${token_symbol}`) :
+                                        []
+                                ])
                             ])
                         )
-                    ])
-                ) :
+                    ]),
+                    state.walletError !== null ?
+                        h('p', { className: 'has-text-danger' }, state.walletError) :
+                        [],
+                )
+            ),
+            state.selectedVaultIndex !== null ? 
+                selectedVaultDisplay() :
                 [],
-            state.vaults.reduce((list, vault, index) => {
-                if(state.address === null || !state.onlyOwnedVaults || vault.owner == state.address) {
-                    const parts = [];
-
-                    parts.push(
-                        h('div', { className: 'columns' }, [
-                            h('div', { className: 'column'}, `#${vault.id}`),
-                            h('div', { className: 'column'}, `${ethers.utils.formatEther(vault.collateral)} ETH`),
-                            h('div', { className: 'column'}, `${ethers.utils.formatEther(vault.debt)} ${token_symbol}`)
+            h('section', { className: 'section' }, [
+                h('h1', { className: 'title' }, 'Vaults'),
+                state.address !== null ?
+                    h('div', { className: 'level space-bottom'},
+                        h('div', { className: 'level-left' }, [
+                            h('button', { className: 'button space-right level-item', disabled: state.transactionHash !== null, onclick: createVault }, 'Create Vault'),
+                            h('div', { className: 'level-item' },
+                                h('label', { className: 'checkbox' }, [
+                                    h('input', { type: 'checkbox', checked: state.onlyOwnedVaults, onchange: onlyOwnedVaultsChange }),
+                                    ' Only my vaults'
+                                ])
+                            )
                         ])
-                    );
-
-                    if(state.ethPrice !== null && state.tokenPrice !== null) {
-                        const debtValue = vault.debt.mul(state.tokenPrice).div(ethers.constants.WeiPerEther);
-                        const collateralValue = vault.collateral.mul(state.ethPrice).div(ethers.constants.WeiPerEther);
-
-                        let debtRatioDisplay;
-                        if(!debtValue.eq(0)) {
-                            const debtRatio = collateralValue.mul(100).div(debtValue);
-
-                            if(debtRatio.gte(minimum_collateral_percentage)) {
-                                debtRatioDisplay = h('div', { className: 'column'}, `${debtRatio}%`);
-                            } else {
-                                debtRatioDisplay = h('div', { className: 'column has-text-danger'}, `${debtRatio}%`);
-                            }
-                        } else {
-                            debtRatioDisplay = h('div', { className: 'column'}, '');
-                        }
+                    ) :
+                    [],
+                state.vaults.reduce((list, vault, index) => {
+                    if(state.address === null || !state.onlyOwnedVaults || vault.owner == state.address) {
+                        const parts = [];
 
                         parts.push(
                             h('div', { className: 'columns' }, [
-                                debtRatioDisplay,
-                                h('div', { className: 'column'}, `${ethers.utils.formatEther(collateralValue)} ${target_symbol}`),
-                                h('div', { className: 'column'}, `${ethers.utils.formatEther(debtValue)} ${target_symbol}`)
+                                h('div', { className: 'column'}, `#${vault.id}`),
+                                h('div', { className: 'column'}, `${ethers.utils.formatEther(vault.collateral)} ETH`),
+                                h('div', { className: 'column'}, `${ethers.utils.formatEther(vault.debt)} ${token_symbol}`)
+                            ])
+                        );
+
+                        if(state.ethPrice !== null && state.tokenPrice !== null) {
+                            const debtValue = vault.debt.mul(state.tokenPrice).div(ethers.constants.WeiPerEther);
+                            const collateralValue = vault.collateral.mul(state.ethPrice).div(ethers.constants.WeiPerEther);
+
+                            let debtRatioDisplay;
+                            if(!debtValue.eq(0)) {
+                                const debtRatio = collateralValue.mul(100).div(debtValue);
+
+                                if(debtRatio.gte(minimum_collateral_percentage)) {
+                                    debtRatioDisplay = h('div', { className: 'column'}, `${debtRatio}%`);
+                                } else {
+                                    debtRatioDisplay = h('div', { className: 'column has-text-danger'}, `${debtRatio}%`);
+                                }
+                            } else {
+                                debtRatioDisplay = h('div', { className: 'column'}, '');
+                            }
+
+                            parts.push(
+                                h('div', { className: 'columns' }, [
+                                    debtRatioDisplay,
+                                    h('div', { className: 'column'}, `${ethers.utils.formatEther(collateralValue)} ${target_symbol}`),
+                                    h('div', { className: 'column'}, `${ethers.utils.formatEther(debtValue)} ${target_symbol}`)
+                                ])
+                            );
+                        }
+
+                        list.push(
+                            h('div', { className: 'box is-size-7 has-text-weight-bold' }, [
+                                parts,
+                                h('button', { className: 'button', disabled: state.selectedVaultIndex === index, onclick: () => selectVault(index) }, 'Select')
                             ])
                         );
                     }
 
-                    list.push(
-                        h('div', { className: 'box is-size-7 has-text-weight-bold' }, [
-                            parts,
-                            h('button', { className: 'button', disabled: state.selectedVaultIndex === index, onclick: () => selectVault(index) }, 'Select')
-                        ])
-                    );
-                }
-
-                return list;
-            }, [])
-        ])
+                    return list;
+                }, [])
+            ])
+        ]),
+        state.transactionHash !== null ?
+            h('article', { className: 'message transaction-message' },
+                h('div', { className: 'message-body'}, `Waiting for confirmation of transaction ${state.transactionHash}`)
+            ) :
+            []
     ]);
 }
 
@@ -709,6 +792,7 @@ let state = {
     provider: environment === 'production' ? ethers.getDefaultProvider(network) : new ethers.providers.JsonRpcProvider('http://localhost:8545'),
     signer: null,
     address: null,
+    transactionHash: null,
     onlyOwnedVaults: true,
     vaults: [],
     selectedVaultIndex: null,

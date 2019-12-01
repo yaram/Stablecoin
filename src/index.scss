@@ -21,3 +21,9 @@
     flex-direction: column;
     align-items: flex-end;
 }
+
+.transaction-message {
+    position: fixed;
+    top: $block-spacing;
+    right: $block-spacing;
+}
