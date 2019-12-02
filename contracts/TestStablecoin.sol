@@ -27,4 +27,12 @@ contract TestStablecoin is Stablecoin, Ownable {
     function burn(address account, uint256 amount) external onlyOwner() {
         _burn(account, amount);
     }
+
+    function changeEthPriceSource(address ethPriceSourceAddress) external onlyOwner() {
+        ethPriceSource = PriceSource(ethPriceSourceAddress);
+    }
+
+    function changeTokenPriceSource(address tokenPriceSourceAddress) external onlyOwner() {
+        tokenPriceSource = PriceSource(tokenPriceSourceAddress);
+    }
 }
