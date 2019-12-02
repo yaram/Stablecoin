@@ -27,6 +27,8 @@ contract ChainlinkAggregatorPriceSource is PriceSource {
         require(aggregatorPrice > 0, "Aggregator reporting non-positive price");
 
         _price = uint256(aggregatorPrice) * 1e10;
+
+        assert(_price > uint256(aggregatorPrice));
     }
 
     function updatePrice() external {
