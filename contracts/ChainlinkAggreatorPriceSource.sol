@@ -5,10 +5,9 @@ interface AggregatorInterface {
     function updatedHeight() external view returns (uint256);
 }
 
-import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "./PriceSource.sol";
 
-contract ChainlinkAggregatorPriceSource is PriceSource, Ownable {
+contract ChainlinkAggregatorPriceSource is PriceSource {
     uint256 private _price;
     AggregatorInterface private _aggregator;
 
